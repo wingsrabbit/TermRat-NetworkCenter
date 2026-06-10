@@ -1,20 +1,31 @@
 /* ============================================================
-   ONC — 公开主页 (/)（ESM）
+   ONC — 公开主页 (/)（接后端真数据）
    ============================================================ */
 import React, { useState } from "react";
 import { useApp, ThemeToggle, Brand } from "../store.jsx";
 import { Ic, Tag, StatusDot, Bar, Empty, Latency } from "../ui.jsx";
 import { Sparkline } from "../sparkline.jsx";
-import { DB } from "../data.js";
+import { DB } from "../data.js";            // 仅用其纯函数 usageLevel
+import { useOverview } from "../api.js";
 
 export function PublicHome() {
   const { navigate, secondsAgo } = useApp();
-  const db = DB;
+  const { data: db, error } = useOverview();
   const [q, setQ] = useState("");
   const [region, setRegion] = useState("全部");
   const [status, setStatus] = useState("全部");
 
-  const regions = ["全部", ...Array.from(new Set(db.nodes.map((n) => n.region)))];
+  // 首次加载 / 加载失败
+  if (!db) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, background: "var(--bg)" }}>
+        <Brand />
+        <div className="muted">{error ? `加载失败：${error}（重试中…）` : "加载中…"}</div>
+      </div>
+    );
+  }
+
+  const regions = ["全部", ...Array.from(new Set(db.nodes.map((n) => n.region).filter(Boolean)))];
   const hasIssue = db.kpi.offline > 0 || db.kpi.alerts > 0;
   const issueCount = db.kpi.offline + db.tasks.filter((t) => t.alerting).length;
 
@@ -54,7 +65,7 @@ export function PublicHome() {
               {hasIssue ? `⚠ ${issueCount} 个节点 / 线路异常` : "✓ 所有系统运行正常"}
             </div>
             <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-              {hasIssue ? "部分线路出现延迟或丢包，团队正在处理；其余服务正常。" : "全部节点在线，探测线路指标均在阈值内。"}
+              {hasIssue ? "部分节点离线或线路指标异常，团队正在处理；其余服务正常。" : "全部节点在线，探测线路指标均在阈值内。"}
             </div>
           </div>
         </div>
@@ -79,7 +90,7 @@ export function PublicHome() {
           <div className="grid nodes">
             {filtered.map((n, i) => <NodeCard key={n.id} node={n} delay={i * 50} onClick={() => navigate("/node/" + n.id)} />)}
           </div>
-          {filtered.length === 0 && <Empty text="没有符合条件的节点" />}
+          {filtered.length === 0 && <Empty text={db.nodes.length ? "没有符合条件的节点" : "暂无节点，请在管理端添加并部署 agent"} />}
         </section>
 
         {/* 网络质量 */}
@@ -103,12 +114,14 @@ export function PublicHome() {
                       </td>
                       <td><Tag tone={db.protoColors[t.proto]} className="proto-tag">{t.proto}</Tag></td>
                       <td><Latency ms={t.latency} /></td>
-                      <td className="num" style={{ color: t.loss > 0 ? "var(--red)" : "var(--text-2)", fontWeight: t.loss > 0 ? 600 : 400 }}>{t.loss}%</td>
+                      <td className="num" style={{ color: t.loss > 0 ? "var(--red)" : "var(--text-2)", fontWeight: t.loss > 0 ? 600 : 400 }}>{t.hasData ? t.loss + "%" : "—"}</td>
                       <td><Sparkline data={t.spark} tone={t.alerting ? "red" : "green"} width={120} /></td>
                       <td>
                         {t.alerting
                           ? <span className="row gap-6"><StatusDot status="offline" pulse /><span style={{ color: "var(--red)", fontWeight: 540 }}>告警中</span></span>
-                          : <span className="row gap-6"><StatusDot status="online" /><span className="muted">正常</span></span>}
+                          : t.hasData
+                            ? <span className="row gap-6"><StatusDot status="online" /><span className="muted">正常</span></span>
+                            : <span className="row gap-6"><span className="dot" style={{ background: "var(--text-3)" }} /><span className="faint">等待数据</span></span>}
                       </td>
                     </tr>
                   ))}
@@ -116,29 +129,15 @@ export function PublicHome() {
               </table>
             </div>
           </div>
+          {db.tasks.length === 0 && <Empty text="暂无探测任务，请在管理端创建" />}
         </section>
 
-        {/* 事件 / 公告时间线 */}
+        {/* 事件 / 公告时间线（后端事件功能为后续增量，暂空态） */}
         <section style={{ marginTop: 40 }}>
           <div className="eyebrow">Incidents</div>
           <h2 className="h1" style={{ marginTop: 4, marginBottom: 16 }}>事件与公告</h2>
           <div className="card card-pad fade-up">
-            <div className="timeline">
-              {db.incidents.map((it) => (
-                <div key={it.id} className="tl-item">
-                  <div className="tl-rail"><span className={"tl-dot " + it.level} /></div>
-                  <div className="tl-content">
-                    <div className="tl-head">
-                      <span className="h3 tl-title">{it.title}</span>
-                      <Tag tone={it.level === "blue" ? "blue" : it.level} dot>{it.status}</Tag>
-                      <span className="grow" />
-                      <span className="faint mono tl-time">{it.time}</span>
-                    </div>
-                    <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{it.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Empty text="暂无事件与公告，系统平稳运行" />
           </div>
         </section>
       </div>
@@ -158,6 +157,7 @@ export function PublicHome() {
 export function NodeCard({ node, delay, onClick }) {
   const n = node;
   const online = n.status === "online";
+  const lastCpu = n.spark && n.spark.length ? n.spark[n.spark.length - 1] : 0;
   return (
     <div className="card card-pad card-hover fade-up" style={{ animationDelay: (delay || 0) + "ms" }} onClick={onClick}>
       <div className="row between" style={{ marginBottom: 12 }}>
@@ -189,8 +189,8 @@ export function NodeCard({ node, delay, onClick }) {
             <span className="row gap-4 muted"><Ic name="clock" size={13} /><span className="num">{n.uptimeDays}d</span></span>
           </div>
           <div className="row between" style={{ marginTop: 12, alignItems: "flex-end" }}>
-            <span className="faint" style={{ fontSize: 11.5 }}>延迟趋势 (1h)</span>
-            <Sparkline data={n.spark} tone={DB.latencyLevel(n.spark[n.spark.length - 1])} width={130} height={28} />
+            <span className="faint" style={{ fontSize: 11.5 }}>CPU 趋势</span>
+            <Sparkline data={n.spark} tone={DB.usageLevel(lastCpu)} width={130} height={28} />
           </div>
         </React.Fragment>
       ) : (
