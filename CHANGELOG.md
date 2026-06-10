@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [0.4] - 2026-06-10
+### 变更
+- **前端接真数据**：公开主页改为调用 `/api/public/overview` 并每 10s 轮询，去掉 mock；新增归一化数据层 `frontend/src/api.js`。
+- 网络质量表三态（告警 / 正常 / 等待数据）；节点卡片趋势改为 **CPU 趋势**（后端 overview 为每节点补充 CPU spark）。
+- 事件与公告区暂为空态（后端事件功能列后续增量）。
+
 ## [0.3] - 2026-06-10
 ### 新增
 - **统一 agent**（agent/）：ICMP(icmplib)/TCP/UDP/HTTP(httpx trace 拆解时延)/DNS(dnspython) 五种探测 + psutil 采资源（CPU/内存/磁盘/负载/流量/在线时长）+ 调度/上报循环（全程容错）。
