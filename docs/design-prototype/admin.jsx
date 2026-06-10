@@ -1,0 +1,251 @@
+/* ============================================================
+   ONC — 管理端：登录页 + 外壳布局
+   ============================================================ */
+
+/* ---------------- 登录页 (/admin) ---------------- */
+function Login() {
+  const { login, navigate, auth } = useApp();
+  const [name, setName] = useState("admin");
+  const [pwd, setPwd] = useState("");
+  const [show, setShow] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => { if (auth) navigate("/admin/dashboard"); }, []);
+
+  const submit = (e) => {
+    e.preventDefault();
+    setErr("");
+    if (!name.trim() || !pwd.trim()) { setErr("请输入用户名与密码"); return; }
+    setLoading(true);
+    setTimeout(() => {
+      const role = name.trim() === "viewer" ? "readonly" : "admin";
+      login({ name: name.trim(), role });
+      navigate("/admin/dashboard");
+    }, 550);
+  };
+
+  return (
+    <div style={{
+      minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      background: "var(--panel)", padding: 24, position: "relative",
+      backgroundImage: "radial-gradient(var(--border) 0.6px, transparent 0.6px)", backgroundSize: "22px 22px",
+    }}>
+      <div style={{ position: "absolute", top: 20, right: 24 }}><ThemeToggle /></div>
+
+      <div className="fade-up" style={{ width: "100%", maxWidth: 380 }}>
+        <div style={{ textAlign: "center", marginBottom: 22 }}>
+          <div style={{ display: "inline-flex", marginBottom: 14 }}><Brand compact /></div>
+          <h1 className="h1" style={{ fontSize: 21 }}>管理登录</h1>
+          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>ONC 网络状态中心 · 控制台</p>
+        </div>
+
+        <form onSubmit={submit} className="card card-pad" style={{ padding: "26px 26px 22px" }}>
+          {err && <div className="warn-note" style={{ marginBottom: 16 }}><Ic name="warnTri" />{err}</div>}
+          <div className="field">
+            <label className="req">用户名</label>
+            <input className={"input" + (err && !name ? " error" : "")} value={name} onChange={(e) => setName(e.target.value)} placeholder="请输入用户名" autoFocus />
+          </div>
+          <div className="field">
+            <label className="req">密码</label>
+            <div className="input-affix">
+              <input className={"input" + (err && !pwd ? " error" : "")} type={show ? "text" : "password"} value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="请输入密码" />
+              <button type="button" className="btn-icon eye" onClick={() => setShow((s) => !s)} tabIndex={-1} aria-label="显示密码"><Ic name={show ? "eyeOff" : "eye"} size={16} /></button>
+            </div>
+          </div>
+          <div className="row between" style={{ marginBottom: 18 }}>
+            <Checkbox checked={remember} onChange={setRemember}>记住我</Checkbox>
+            <button type="button" className="btn-link">忘记密码？</button>
+          </div>
+          <button className="btn primary block lg" disabled={loading}>
+            {loading ? <Ic name="refresh" size={16} className="spin" /> : null}
+            {loading ? "登录中…" : "登录"}
+          </button>
+          <div className="faint" style={{ fontSize: 12, textAlign: "center", marginTop: 16, lineHeight: 1.6 }}>
+            演示账号：<span className="mono">admin</span> (管理员) / <span className="mono">viewer</span> (只读)<br />密码任意
+          </div>
+        </form>
+        <div style={{ textAlign: "center", marginTop: 18 }}>
+          <button className="btn-link" onClick={() => navigate("/")}><Ic name="chevLeft" size={13} style={{ verticalAlign: "-2px" }} /> 返回公开主页</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- 菜单定义 ---------------- */
+const MENU = [
+  { key: "dashboard", path: "/admin/dashboard", label: "仪表盘", icon: "dashboard", admin: false },
+  { key: "nodes", path: "/admin/nodes", label: "节点管理", icon: "nodes", admin: true },
+  { key: "tasks", path: "/admin/tasks", label: "任务管理", icon: "tasks", admin: true },
+  { key: "alerts", path: "/admin/alerts", label: "告警通道", icon: "alert", admin: true },
+  { key: "history", path: "/admin/alerts/history", label: "告警历史", icon: "history", admin: false },
+  { key: "users", path: "/admin/users", label: "用户管理", icon: "users", admin: true },
+  { key: "settings", path: "/admin/settings", label: "系统设置", icon: "settings", admin: true },
+];
+
+/* ---------------- 外壳 ---------------- */
+function AdminShell({ children }) {
+  const { auth, logout, route, navigate, isAdmin, setRole, clock, secondsAgo } = useApp();
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("onc-collapse") === "1");
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenu, setUserMenu] = useState(false);
+  const userRef = useClickOutside(() => setUserMenu(false));
+
+  useEffect(() => { localStorage.setItem("onc-collapse", collapsed ? "1" : "0"); }, [collapsed]);
+  useEffect(() => { if (!auth) navigate("/admin"); }, [auth]);
+  if (!auth) return null;
+
+  const activeKey = (() => {
+    const p = route.path;
+    if (p.startsWith("/admin/alerts/history")) return "history";
+    const m = MENU.slice().reverse().find((x) => p.startsWith(x.path));
+    return m ? m.key : "dashboard";
+  })();
+
+  const visibleMenu = MENU.filter((m) => !m.admin || isAdmin);
+  const w = collapsed ? "var(--sidebar-w-collapsed)" : "var(--sidebar-w)";
+
+  const Sidebar = (
+    <aside style={{
+      width: w, flex: "none", background: "var(--bg)", borderRight: "1px solid var(--border)",
+      display: "flex", flexDirection: "column", transition: "width var(--dur) var(--ease)",
+      position: "sticky", top: 0, height: "100vh", zIndex: 20,
+    }}>
+      <div className="row between" style={{ height: 56, padding: collapsed ? "0" : "0 16px", justifyContent: collapsed ? "center" : "space-between", borderBottom: "1px solid var(--border)" }}>
+        {collapsed
+          ? <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Ic name="rabbit" size={17} /></div>
+          : <div className="row gap-8" style={{ overflow: "hidden", whiteSpace: "nowrap" }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><Ic name="rabbit" size={17} /></div>
+              <span style={{ fontWeight: 660, fontSize: 14.5 }}>ONC <span className="faint" style={{ fontWeight: 500, fontSize: 12 }}>v1.0</span></span>
+            </div>}
+      </div>
+
+      <nav style={{ padding: "10px 10px", flex: 1, overflowY: "auto" }}>
+        {visibleMenu.map((m) => {
+          const active = activeKey === m.key;
+          return (
+            <button key={m.key} onClick={() => { navigate(m.path); setMobileOpen(false); }}
+              title={collapsed ? m.label : ""}
+              style={{
+                display: "flex", alignItems: "center", gap: 11, width: "100%",
+                padding: collapsed ? "10px 0" : "10px 12px", justifyContent: collapsed ? "center" : "flex-start",
+                marginBottom: 3, border: "none", borderRadius: 8, cursor: "pointer",
+                background: active ? "var(--primary-soft)" : "transparent",
+                color: active ? "var(--primary)" : "var(--text-2)",
+                fontWeight: active ? 600 : 500, fontSize: 13.5, fontFamily: "var(--font)",
+                transition: "background var(--dur) var(--ease), color var(--dur) var(--ease)",
+              }}
+              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--panel)"; }}
+              onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}>
+              <Ic name={m.icon} size={18} />
+              {!collapsed && <span style={{ whiteSpace: "nowrap" }}>{m.label}</span>}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div style={{ padding: 10, borderTop: "1px solid var(--border)" }}>
+        <button className="btn ghost block sm" onClick={() => setCollapsed((c) => !c)} style={{ justifyContent: collapsed ? "center" : "flex-start", color: "var(--text-2)" }}>
+          <Ic name={collapsed ? "chevRight" : "chevLeft"} size={16} />{!collapsed && "收起侧栏"}
+        </button>
+      </div>
+    </aside>
+  );
+
+  return (
+    <div style={{ display: "flex", minHeight: "100vh", background: "var(--panel)" }}>
+      {/* 桌面侧栏 */}
+      <div className="desktop-only" style={{ display: "flex" }}>{Sidebar}</div>
+      {/* 移动侧栏 */}
+      {mobileOpen && <React.Fragment>
+        <div className="overlay mobile-only" onClick={() => setMobileOpen(false)} />
+        <div className="mobile-only" style={{ position: "fixed", left: 0, top: 0, bottom: 0, zIndex: 101 }}>{Sidebar}</div>
+      </React.Fragment>}
+
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        {/* 顶栏 */}
+        <header style={{
+          height: 56, flex: "none", background: "var(--bg)", borderBottom: "1px solid var(--border)",
+          display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px",
+          position: "sticky", top: 0, zIndex: 18,
+        }}>
+          <div className="row gap-8">
+            <button className="btn-icon mobile-only" onClick={() => setMobileOpen(true)}><Ic name="menu" /></button>
+            <Breadcrumb activeKey={activeKey} />
+          </div>
+          <div className="row gap-6">
+            <button className="btn ghost sm" onClick={() => navigate("/")} title="查看公开主页"><Ic name="globe" size={15} /><span className="desktop-only">公开主页</span></button>
+            <ThemeToggle />
+            <div className="vr" style={{ height: 24 }} />
+            <div style={{ position: "relative" }} ref={userRef}>
+              <button className="btn ghost sm" onClick={() => setUserMenu((v) => !v)} style={{ gap: 8 }}>
+                <span style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--primary-soft)", color: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 12 }}>{auth.name.slice(0, 1).toUpperCase()}</span>
+                <span className="desktop-only">{auth.name} <span className="faint">({auth.role === "admin" ? "管理员" : "只读"})</span></span>
+                <Ic name="chevDown" size={14} />
+              </button>
+              {userMenu && (
+                <div className="menu" style={{ right: 0, top: 42, minWidth: 200 }}>
+                  <div style={{ padding: "6px 10px 8px" }}>
+                    <div style={{ fontWeight: 600 }}>{auth.name}</div>
+                    <div className="faint" style={{ fontSize: 12 }}>{auth.role === "admin" ? "管理员 · 全部权限" : "只读 · 仅查看"}</div>
+                  </div>
+                  <div className="divider" style={{ margin: "4px 0" }} />
+                  <div style={{ padding: "4px 10px 6px" }}>
+                    <div className="faint" style={{ fontSize: 11, marginBottom: 6 }}>切换演示角色</div>
+                    <div className="seg" style={{ width: "100%" }}>
+                      <button className={auth.role === "admin" ? "active" : ""} style={{ flex: 1 }} onClick={() => { setRole("admin"); }}>管理员</button>
+                      <button className={auth.role === "readonly" ? "active" : ""} style={{ flex: 1 }} onClick={() => { setRole("readonly"); navigate("/admin/dashboard"); }}>只读</button>
+                    </div>
+                  </div>
+                  <div className="divider" style={{ margin: "4px 0" }} />
+                  <div className="menu-item danger" onClick={logout}><Ic name="logout" size={15} />退出登录</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* 内容 */}
+        <main style={{ flex: 1, padding: "22px 24px", minWidth: 0 }}>
+          {!isAdmin && <ReadonlyNote activeKey={activeKey} />}
+          {children}
+        </main>
+
+        {/* 底栏 */}
+        <footer style={{ height: 36, flex: "none", borderTop: "1px solid var(--border)", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontSize: 11.5, color: "var(--text-3)", padding: "0 16px", textAlign: "center" }}>
+          <span className="row gap-6" style={{ flexWrap: "wrap", justifyContent: "center" }}>
+            <span>Powered by <b style={{ color: "var(--text-2)" }}>ONC</b></span>
+            <span className="faint">·</span>
+            <span>现在时间（GMT+8）：<span className="num">{clock}</span></span>
+            <span className="faint">·</span>
+            <span className="row gap-4"><span className="dot green" style={{ width: 5, height: 5 }} />最后更新：{secondsAgo < 10 ? secondsAgo + " 秒内" : secondsAgo + " 秒前"}</span>
+          </span>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+function Breadcrumb({ activeKey }) {
+  const m = MENU.find((x) => x.key === activeKey);
+  return (
+    <div className="row gap-6" style={{ fontSize: 14, fontWeight: 600 }}>
+      <Ic name={m ? m.icon : "dashboard"} size={17} style={{ color: "var(--text-2)" }} />
+      <span>{m ? m.label : "仪表盘"}</span>
+    </div>
+  );
+}
+
+function ReadonlyNote({ activeKey }) {
+  if (!["dashboard", "history"].includes(activeKey)) return null;
+  return (
+    <div className="card card-pad fade-up" style={{ background: "var(--panel-2)", borderStyle: "dashed", marginBottom: 16, display: "flex", gap: 10, alignItems: "center", padding: "12px 16px" }}>
+      <Ic name="eye" size={16} style={{ color: "var(--text-2)" }} />
+      <span className="muted" style={{ fontSize: 13 }}>当前为 <b>只读角色</b>：仅可查看「仪表盘」与「告警历史」，其余菜单与所有写操作已隐藏。</span>
+    </div>
+  );
+}
+
+Object.assign(window, { Login, AdminShell, MENU });
