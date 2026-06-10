@@ -306,6 +306,11 @@ def get_overview():
     在线/离线读时计算，不写库。"""
     nodes = list_nodes()
     with get_conn() as c:
+        for n in nodes:
+            sp = c.execute(
+                "SELECT cpu FROM resources WHERE node_id=? AND cpu IS NOT NULL "
+                "ORDER BY ts DESC LIMIT 24", (n["id"],)).fetchall()
+            n["spark"] = [row["cpu"] for row in reversed(sp)]   # 节点 CPU 趋势
         tasks = [dict(r) for r in c.execute("SELECT * FROM tasks ORDER BY created_at").fetchall()]
         for t in tasks:
             last = c.execute(
