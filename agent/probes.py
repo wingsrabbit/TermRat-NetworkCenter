@@ -10,6 +10,7 @@ import time
 
 import httpx
 import dns.resolver
+import dns.message
 from icmplib import ping
 
 
@@ -101,8 +102,10 @@ def probe_udp(target: str, port: int, timeout: float) -> dict:
         sock.settimeout(timeout)
         sock.connect(sockaddr)
 
+        # DNS(53) 发合法 DNS 查询以拿到真实响应；其它端口仍用通用单字节探测
+        payload = dns.message.make_query("example.com", "A").to_wire() if int(port) == 53 else b"\x00"
         start = time.perf_counter()
-        sock.send(b"\x00")
+        sock.send(payload)
         try:
             sock.recv(1024)
             # 有回包：主机可达
