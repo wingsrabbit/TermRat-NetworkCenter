@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [0.3] - 2026-06-10
+### 新增
+- **统一 agent**（agent/）：ICMP(icmplib)/TCP/UDP/HTTP(httpx trace 拆解时延)/DNS(dnspython) 五种探测 + psutil 采资源（CPU/内存/磁盘/负载/流量/在线时长）+ 调度/上报循环（全程容错）。
+- Dockerfile + 一条命令部署；README（含 CAP_NET_RAW 说明）。
+- 由构建 subagent 实现并自测（tcp/http/dns 通过、udp 双分支、icmp 代码路径正确）。
+
 ## [0.2] - 2026-06-10
 ### 新增
 - **后端数据层**（SQLite）：nodes / tasks / results / resources + 节点 token(sha256) 鉴权 + 在线/离线读时判定 + 时序保留清理。
