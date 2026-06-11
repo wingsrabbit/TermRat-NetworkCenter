@@ -10,8 +10,12 @@
 在线/离线在“读时计算”（按 last_seen），不在公开读路径写库。
 """
 import hashlib
+import hmac
+import json
 import os
 import secrets
+import threading
+import urllib.request
 import sqlite3
 import time
 import uuid
@@ -85,6 +89,14 @@ CREATE TABLE IF NOT EXISTS tasks (
     interval       INTEGER DEFAULT 5,
     timeout        INTEGER DEFAULT 5,
     enabled        INTEGER DEFAULT 1,
+    alert_latency_threshold REAL,
+    alert_loss_threshold    REAL,
+    alert_fail_count        INTEGER,
+    alert_trigger_count     INTEGER DEFAULT 3,
+    alert_recovery_count    INTEGER DEFAULT 3,
+    alert_cooldown          INTEGER DEFAULT 300,
+    alert_status            TEXT DEFAULT 'normal',
+    alert_last_ts           INTEGER,
     created_at     TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_tasks_source ON tasks(source_node_id);
@@ -109,7 +121,54 @@ CREATE TABLE IF NOT EXISTS resources (
 CREATE INDEX IF NOT EXISTS idx_resources_node_ts ON resources(node_id, ts);
 
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+
+CREATE TABLE IF NOT EXISTS users (
+    id            TEXT PRIMARY KEY,
+    username      TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role          TEXT DEFAULT 'admin',          -- admin/readonly
+    created_at    TEXT NOT NULL,
+    created_by    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS alert_channels (
+    id         TEXT PRIMARY KEY,
+    name       TEXT NOT NULL,
+    type       TEXT DEFAULT 'webhook',
+    url        TEXT,
+    enabled    INTEGER DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS alert_history (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id      TEXT,
+    task_name    TEXT,
+    event_type   TEXT,                            -- alert/recovery
+    metric       TEXT,                            -- latency/loss/fail
+    actual_value REAL,
+    threshold    REAL,
+    notified     INTEGER DEFAULT 0,
+    ts           INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_alert_history_ts ON alert_history(ts);
 """
+
+
+# 老库迁移：tasks 新增的告警列
+_TASK_MIGRATE_COLS = [
+    ("alert_latency_threshold", "REAL"), ("alert_loss_threshold", "REAL"),
+    ("alert_fail_count", "INTEGER"), ("alert_trigger_count", "INTEGER DEFAULT 3"),
+    ("alert_recovery_count", "INTEGER DEFAULT 3"), ("alert_cooldown", "INTEGER DEFAULT 300"),
+    ("alert_status", "TEXT DEFAULT 'normal'"), ("alert_last_ts", "INTEGER"),
+]
 
 
 def init_db():
@@ -117,7 +176,23 @@ def init_db():
     with get_conn() as c:
         c.execute("PRAGMA journal_mode=WAL")     # 仅在初始化时设一次（持久化于 db 文件）
         c.executescript(SCHEMA)
-        c.execute("INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', '1')")
+        c.execute("INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', '2')")
+        for col, typ in _TASK_MIGRATE_COLS:      # 老库补列
+            try:
+                c.execute(f"ALTER TABLE tasks ADD COLUMN {col} {typ}")
+            except sqlite3.OperationalError:
+                pass
+    _ensure_default_admin()
+
+
+def _ensure_default_admin():
+    """无任何用户时创建默认管理员（用户名/密码取 env，默认 admin/admin）。"""
+    with get_conn() as c:
+        n = c.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
+    if n == 0:
+        create_user(os.environ.get("INITIAL_ADMIN_USER", "admin"),
+                    os.environ.get("INITIAL_ADMIN_PASSWORD", "admin"),
+                    role="admin", created_by="system")
 
 
 def _effective_status(row):
@@ -184,18 +259,43 @@ def delete_node(nid):
         c.execute("DELETE FROM nodes WHERE id=?", (nid,))
 
 
+def regenerate_node_token(nid):
+    """重置节点 token，返回新的明文 token（部署 agent 用）。"""
+    token = secrets.token_urlsafe(24)
+    with get_conn() as c:
+        c.execute("UPDATE nodes SET token_hash=? WHERE id=?", (hash_token(token), nid))
+    return token
+
+
 # ----------------------------- 任务 -----------------------------
 def create_task(name, source_node_id, protocol, target_address=None, target_type="external",
-                target_node_id=None, target_port=None, interval=5, timeout=5):
+                target_node_id=None, target_port=None, interval=5, timeout=5,
+                alert_latency_threshold=None, alert_loss_threshold=None, alert_fail_count=None,
+                alert_trigger_count=3, alert_recovery_count=3, alert_cooldown=300):
     tid = gen_id("t")
     with get_conn() as c:
         c.execute(
             "INSERT INTO tasks (id, name, source_node_id, protocol, target_type, target_address, "
-            "target_node_id, target_port, interval, timeout, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            "target_node_id, target_port, interval, timeout, alert_latency_threshold, alert_loss_threshold, "
+            "alert_fail_count, alert_trigger_count, alert_recovery_count, alert_cooldown, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (tid, name, source_node_id, protocol, target_type, target_address,
-             target_node_id, target_port, interval, timeout, now_str()),
+             target_node_id, target_port, interval, timeout, alert_latency_threshold, alert_loss_threshold,
+             alert_fail_count, alert_trigger_count, alert_recovery_count, alert_cooldown, now_str()),
         )
     return tid
+
+
+def update_task(tid, **f):
+    allowed = {"name", "interval", "timeout", "enabled", "alert_latency_threshold",
+               "alert_loss_threshold", "alert_fail_count", "alert_trigger_count",
+               "alert_recovery_count", "alert_cooldown"}
+    sets = {k: v for k, v in f.items() if k in allowed}
+    if not sets:
+        return
+    cols = ", ".join(f"{k}=?" for k in sets)
+    with get_conn() as c:
+        c.execute(f"UPDATE tasks SET {cols} WHERE id=?", (*sets.values(), tid))
 
 
 def list_tasks(source_node_id=None):
@@ -325,7 +425,7 @@ def get_overview():
         "online": sum(1 for n in nodes if n["status"] == "online"),
         "offline": sum(1 for n in nodes if n["status"] == "offline"),
         "tasks_total": len(tasks),
-        "alerting": 0,  # 告警引擎后续增量
+        "alerting": sum(1 for t in tasks if t.get("alert_status") == "alerting"),
     }
     return {"nodes": nodes, "tasks": tasks, "summary": summary}
 
@@ -346,3 +446,229 @@ def get_task_history(tid, minutes=30):
             "SELECT ts, latency, packet_loss, jitter, success, status_code, ttfb FROM results "
             "WHERE task_id=? AND ts>=? ORDER BY ts", (tid, cutoff)).fetchall()
     return [dict(r) for r in rows]
+
+
+# ========================= 用户 / 会话 / 鉴权 =========================
+def hash_password(pw):
+    salt = secrets.token_bytes(16)
+    dk = hashlib.pbkdf2_hmac("sha256", pw.encode("utf-8"), salt, 100_000)
+    return "pbkdf2$" + salt.hex() + "$" + dk.hex()
+
+
+def verify_password(pw, stored):
+    try:
+        _, salt_hex, dk_hex = stored.split("$")
+        dk = hashlib.pbkdf2_hmac("sha256", pw.encode("utf-8"), bytes.fromhex(salt_hex), 100_000)
+        return hmac.compare_digest(dk.hex(), dk_hex)
+    except Exception:
+        return False
+
+
+def create_user(username, password, role="admin", created_by=None):
+    uid = gen_id("u")
+    with get_conn() as c:
+        c.execute("INSERT INTO users (id, username, password_hash, role, created_at, created_by) "
+                  "VALUES (?,?,?,?,?,?)", (uid, username, hash_password(password), role, now_str(), created_by))
+    return uid
+
+
+def get_user_by_name(username):
+    with get_conn() as c:
+        r = c.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+    return dict(r) if r else None
+
+
+def list_users():
+    with get_conn() as c:
+        return [{"id": r["id"], "username": r["username"], "role": r["role"],
+                 "created_at": r["created_at"], "created_by": r["created_by"]}
+                for r in c.execute("SELECT * FROM users ORDER BY created_at").fetchall()]
+
+
+def delete_user(uid):
+    with get_conn() as c:
+        u = c.execute("SELECT role FROM users WHERE id=?", (uid,)).fetchone()
+        if not u:
+            return False
+        if u["role"] == "admin":
+            admins = c.execute("SELECT COUNT(*) AS n FROM users WHERE role='admin'").fetchone()["n"]
+            if admins <= 1:
+                return False  # 至少保留一个管理员
+        c.execute("DELETE FROM users WHERE id=?", (uid,))
+        c.execute("DELETE FROM sessions WHERE user_id=?", (uid,))
+    return True
+
+
+def reset_user_password(uid, password):
+    with get_conn() as c:
+        c.execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password(password), uid))
+
+
+SESSION_TTL_SEC = 7 * 86400
+
+
+def create_session(user_id):
+    token = secrets.token_urlsafe(32)
+    now = now_ms()
+    with get_conn() as c:
+        c.execute("INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?,?,?,?)",
+                  (hash_token(token), user_id, now, now + SESSION_TTL_SEC * 1000))
+    return token
+
+
+def get_session_user(token):
+    if not token:
+        return None
+    with get_conn() as c:
+        r = c.execute("SELECT s.expires_at, u.id, u.username, u.role FROM sessions s "
+                      "JOIN users u ON u.id = s.user_id WHERE s.token_hash=?", (hash_token(token),)).fetchone()
+    if not r or r["expires_at"] < now_ms():
+        return None
+    return {"id": r["id"], "username": r["username"], "role": r["role"]}
+
+
+def delete_session(token):
+    with get_conn() as c:
+        c.execute("DELETE FROM sessions WHERE token_hash=?", (hash_token(token),))
+
+
+# ===================== 告警渠道 / 历史 / 设置 =====================
+def create_channel(name, url, type="webhook"):
+    cid = gen_id("c")
+    with get_conn() as c:
+        c.execute("INSERT INTO alert_channels (id, name, type, url, created_at) VALUES (?,?,?,?,?)",
+                  (cid, name, type, url, now_str()))
+    return cid
+
+
+def list_channels():
+    with get_conn() as c:
+        return [dict(r) for r in c.execute("SELECT * FROM alert_channels ORDER BY created_at").fetchall()]
+
+
+def update_channel(cid, **f):
+    allowed = {"name", "url", "enabled"}
+    sets = {k: v for k, v in f.items() if k in allowed}
+    if not sets:
+        return
+    cols = ", ".join(f"{k}=?" for k in sets)
+    with get_conn() as c:
+        c.execute(f"UPDATE alert_channels SET {cols} WHERE id=?", (*sets.values(), cid))
+
+
+def delete_channel(cid):
+    with get_conn() as c:
+        c.execute("DELETE FROM alert_channels WHERE id=?", (cid,))
+
+
+def list_alert_history(limit=100):
+    with get_conn() as c:
+        return [dict(r) for r in c.execute(
+            "SELECT * FROM alert_history ORDER BY ts DESC LIMIT ?", (limit,)).fetchall()]
+
+
+DEFAULT_SETTINGS = {
+    "site_title": "TermRat 网络状态中心",
+    "site_subtitle": "实时服务器资源监控 · 网络质量探测",
+    "data_retention_days": RETAIN_DAYS,
+    "global_alert_cooldown": 300,
+    "default_probe_interval": 5,
+    "default_probe_timeout": 5,
+}
+
+
+def get_settings():
+    s = dict(DEFAULT_SETTINGS)
+    with get_conn() as c:
+        for r in c.execute("SELECT key, value FROM meta WHERE substr(key,1,4)='set_'").fetchall():
+            k = r["key"][4:]
+            try:
+                s[k] = json.loads(r["value"])
+            except Exception:
+                s[k] = r["value"]
+    return s
+
+
+def update_settings(d):
+    with get_conn() as c:
+        for k, v in d.items():
+            c.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?,?)", ("set_" + k, json.dumps(v)))
+    return get_settings()
+
+
+# ============================ 告警引擎 ============================
+def evaluate_alerts(task_ids):
+    """对给定任务评估告警：连续 trigger 次越阈→触发，连续 recovery 次正常→恢复。
+    写 alert_history、更新 task.alert_status，返回需通知的事件列表。"""
+    events = []
+    now = now_ms()
+    with get_conn() as c:
+        for tid in set(task_ids):
+            row = c.execute("SELECT * FROM tasks WHERE id=?", (tid,)).fetchone()
+            if not row:
+                continue
+            t = dict(row)
+            lat_th, loss_th, fail_n = (t.get("alert_latency_threshold"),
+                                       t.get("alert_loss_threshold"), t.get("alert_fail_count"))
+            if lat_th is None and loss_th is None and fail_n is None:
+                continue
+            trig = t.get("alert_trigger_count") or 3
+            rec = t.get("alert_recovery_count") or 3
+            rows = c.execute("SELECT latency, packet_loss, success FROM results WHERE task_id=? "
+                             "ORDER BY ts DESC LIMIT ?", (tid, max(trig, rec))).fetchall()
+            recent = [dict(r) for r in rows]
+            if len(recent) < trig:
+                continue
+
+            def breach(r):
+                if lat_th is not None and r["latency"] is not None and r["latency"] > lat_th:
+                    return ("latency", r["latency"], lat_th)
+                if loss_th is not None and r["packet_loss"] is not None and r["packet_loss"] > loss_th:
+                    return ("loss", r["packet_loss"], loss_th)
+                if fail_n is not None and not r["success"]:
+                    return ("fail", 0, fail_n)
+                return None
+
+            cur = t.get("alert_status") or "normal"
+            cooldown = (t.get("alert_cooldown") or 300) * 1000
+            last_ts = t.get("alert_last_ts") or 0
+            first = [breach(r) for r in recent[:trig]]
+            if cur != "alerting" and all(b is not None for b in first) and now - last_ts >= cooldown:
+                m, val, th = first[0]
+                c.execute("UPDATE tasks SET alert_status='alerting', alert_last_ts=? WHERE id=?", (now, tid))
+                c.execute("INSERT INTO alert_history (task_id, task_name, event_type, metric, actual_value, "
+                          "threshold, ts) VALUES (?,?,?,?,?,?,?)", (tid, t["name"], "alert", m, val, th, now))
+                events.append({"type": "alert", "task": t["name"], "metric": m, "value": val, "threshold": th})
+            elif cur == "alerting" and len(recent) >= rec and all(breach(r) is None for r in recent[:rec]):
+                c.execute("UPDATE tasks SET alert_status='normal', alert_last_ts=? WHERE id=?", (now, tid))
+                c.execute("INSERT INTO alert_history (task_id, task_name, event_type, metric, actual_value, "
+                          "threshold, ts) VALUES (?,?,?,?,?,?,?)",
+                          (tid, t["name"], "recovery", "latency", recent[0]["latency"] or 0, lat_th or 0, now))
+                events.append({"type": "recovery", "task": t["name"]})
+    return events
+
+
+def notify_channels(events):
+    """把告警事件异步推送到所有启用的 webhook 渠道（best-effort，不阻塞上报）。"""
+    if not events:
+        return
+    channels = [ch for ch in list_channels() if ch.get("enabled")]
+    if not channels:
+        return
+
+    def _send():
+        for ev in events:
+            if ev["type"] == "alert":
+                text = f"🔴 [TermRat 告警] {ev['task']} 触发：{ev['metric']}={ev['value']} 超阈值 {ev['threshold']}"
+            else:
+                text = f"🟢 [TermRat 恢复] {ev['task']} 已恢复正常"
+            payload = json.dumps({"msgtype": "text", "text": {"content": text}, "content": text}).encode("utf-8")
+            for ch in channels:
+                try:
+                    req = urllib.request.Request(ch["url"], data=payload,
+                                                 headers={"Content-Type": "application/json"}, method="POST")
+                    urllib.request.urlopen(req, timeout=5)
+                except Exception:
+                    pass
+
+    threading.Thread(target=_send, daemon=True).start()
