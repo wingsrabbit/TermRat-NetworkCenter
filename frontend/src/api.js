@@ -39,7 +39,9 @@ function normalize(raw) {
       latency: latest ? latest.latency : null,
       loss: latest ? (latest.packet_loss ?? 0) : 0,
       spark: (t.spark || []).map((v) => +(+v).toFixed(1)),
-      alerting: !!(latest && latest.success === 0),  // 最近一次失败 → 视为异常
+      alertStatus: t.alert_status || "normal",
+      // 阈值告警(v0.5 告警引擎) 或 最近一次探测失败 → 视为异常
+      alerting: t.alert_status === "alerting" || !!(latest && latest.success === 0),
       hasData: !!latest,
     };
   });
