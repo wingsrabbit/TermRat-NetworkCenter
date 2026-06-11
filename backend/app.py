@@ -41,8 +41,15 @@ def spa(path):
         return jsonify({"error": "not found"}), 404
     candidate = os.path.join(STATIC_DIR, path)
     if path and os.path.isfile(candidate):
-        return send_from_directory(STATIC_DIR, path)
-    return send_from_directory(STATIC_DIR, "index.html")
+        resp = send_from_directory(STATIC_DIR, path)
+        # 带内容 hash 的构建产物（assets/*）可不可变长缓存
+        if path.startswith("assets/"):
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
+    # index.html 必须每次回源校验，否则浏览器缓存旧 HTML → 引用旧资源 hash → 看到旧前端
+    resp = send_from_directory(STATIC_DIR, "index.html")
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
 
 
 # 导入即初始化（gunicorn 多 worker 幂等安全）

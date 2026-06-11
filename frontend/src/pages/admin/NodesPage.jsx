@@ -6,11 +6,20 @@ import { Ic, Tag, Empty, Modal, Confirm, CodeBlock, useToast } from "../../ui.js
 import { PageHeader, RowBtn, deploySnippet } from "./_common.jsx";
 import { apiListNodes, apiCreateNode, apiDeleteNode, apiUpdateNode, apiRegenNodeToken } from "../../api.js";
 
+function relAgo(ms) {
+  if (!ms) return "从未上报";
+  const s = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+  if (s < 60) return s + " 秒前";
+  if (s < 3600) return Math.floor(s / 60) + " 分钟前";
+  if (s < 86400) return Math.floor(s / 3600) + " 小时前";
+  return Math.floor(s / 86400) + " 天前";
+}
+
 function normNode(n) {
   return {
     id: n.id, name: n.name,
     label_1: n.label_1 || "", label_2: n.label_2 || "", label_3: n.label_3 || "",
-    enabled: !!n.enabled, status: n.status,
+    enabled: !!n.enabled, status: n.status, last_seen: n.last_seen,
     version: n.agent_version || "—", ip: n.public_ip || "—",
   };
 }
@@ -21,6 +30,7 @@ export function NodesPage() {
   const [loaded, setLoaded] = useState(false);
   const [modal, setModal] = useState(null);   // {type:'add'} | {type:'token', node:{name,token}}
   const [confirm, setConfirm] = useState(null);
+  const [regen, setRegen] = useState(null);   // 待确认「重置 Token」的节点
 
   const reload = async () => {
     try {
@@ -57,7 +67,7 @@ export function NodesPage() {
     toast.success("节点已添加，请部署探针");
   };
 
-  const redeploy = async (n) => {
+  const doRegen = async (n) => {
     try {
       const res = await apiRegenNodeToken(n.id); // {token}
       setModal({ type: "token", node: { name: n.name, token: res.token } });
@@ -85,7 +95,15 @@ export function NodesPage() {
                 <tr key={n.id}>
                   <td className="mono faint" style={{ fontSize: 12 }}>{n.id}</td>
                   <td style={{ fontWeight: 540 }}>{n.name}</td>
-                  <td><Tag tone={n.status === "online" ? "green" : "red"} dot>{n.status === "online" ? "在线" : "离线"}</Tag></td>
+                  <td>
+                    <Tag tone={n.status === "online" ? "green" : "red"} dot>{n.status === "online" ? "在线" : "离线"}</Tag>
+                    {n.status !== "online" && (
+                      <div className="faint" style={{ fontSize: 11, marginTop: 4, display: "flex", alignItems: "center", gap: 3, cursor: "help" }}
+                        title="排查方向：① 目标服务器上 docker ps 看 nc-agent 是否在运行/反复重启；② 是否点过本行「部署」(会重置 Token，旧探针随即失效、需用新命令重新部署)；③ 探针到 center(:8080) 的网络 / 防火墙。">
+                        <Ic name="warnTri" size={11} />最后上报 {relAgo(n.last_seen)}
+                      </div>
+                    )}
+                  </td>
                   <td><Tag tone={n.enabled ? "blue" : "gray"} dot>{n.enabled ? "启用" : "禁用"}</Tag></td>
                   <td className="muted">{n.label_1 || "—"}</td>
                   <td className="muted">{n.label_2 || "—"}</td>
@@ -95,7 +113,7 @@ export function NodesPage() {
                   <td>
                     <div className="actions" style={{ justifyContent: "flex-end" }}>
                       <RowBtn icon="power" label={n.enabled ? "禁用" : "启用"} onClick={() => toggle(n)} />
-                      <RowBtn icon="deploy" label="部署" onClick={() => redeploy(n)} />
+                      <RowBtn icon="deploy" label="部署" onClick={() => setRegen(n)} />
                       <RowBtn icon="trash" label="删除" tone="danger" onClick={() => setConfirm(n)} />
                     </div>
                   </td>
@@ -113,6 +131,9 @@ export function NodesPage() {
       {confirm && <Confirm title="删除节点" danger confirmText="删除"
         message={`确认删除节点「${confirm.name}」？该操作不可恢复，关联探测任务与历史数据将一并删除。`}
         onConfirm={() => del(confirm)} onClose={() => setConfirm(null)} />}
+      {regen && <Confirm title="生成新接入 Token（部署 / 重新部署）" confirmText="生成新 Token"
+        message={`将为节点「${regen.name}」生成新的接入 Token 与部署命令。⚠️ 若该节点已有运行中的探针，旧 Token 会立即失效、节点随即离线，需用新命令在目标服务器重新部署。仅在首次部署或更换探针时使用。`}
+        onConfirm={() => doRegen(regen)} onClose={() => setRegen(null)} />}
     </div>
   );
 }
