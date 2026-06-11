@@ -5,6 +5,15 @@
 
 ## [Unreleased]
 
+## [0.83] - 2026-06-11
+### 修复
+- **浏览器缓存看到旧前端**：app.py 给 index.html 加 `Cache-Control: no-cache`（带 hash 的 assets 长缓存 immutable），redeploy 后自动拿最新 CSS/JS，无需硬刷。这是"改了却没生效"的根因。
+- **启用开关不可见**：关态背景由过浅的 #dfe3ea 改为明显灰 #9aa6b6 + 滑块阴影加强 → 关=灰/开=绿 清晰。
+- **部署弹窗背景渲染**：去掉 .overlay 的 backdrop-filter blur（个别环境渲染异常）。
+- **agent 莫名离线根因**：节点管理「部署」会重置 Token，使运行中探针旧 Token 立即失效→离线。改为点击先弹确认警告。
+### 新增
+- 节点管理离线诊断：离线节点显示「最后上报 X 前」+ 排查提示（agent 是否运行 / 是否被重置 Token / 网络）。
+
 ## [0.82] - 2026-06-11
 ### 变更
 - **数字统一 2 位小数**：新增 `fmtNum`，延迟/抖动/丢包/负载/可用率等数值显示固定 2 位；图表 tooltip（TimeChart/ProbeMiniChart/ResourceChart/TrafficChart）加 valueFormatter，不再出现长浮点（如 583.5203…）。
