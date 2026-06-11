@@ -5,7 +5,7 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "../../store.jsx";
 import { Ic, Tag, StatusDot, Bar, Empty, Latency, StatCard } from "../../ui.jsx";
 import { Sparkline } from "../../sparkline.jsx";
-import { DB, fmtTraffic } from "../../data.js";
+import { DB, fmtTraffic, fmtNum } from "../../data.js";
 import { useOverview } from "../../api.js";
 
 const PROTOS = ["全部", "ICMP", "TCP", "UDP", "HTTP", "DNS"];
@@ -116,7 +116,7 @@ function TaskCard({ task, protoColors, delay, onClick }) {
         </div>
         <div className="col gap-2" style={{ textAlign: "center" }}>
           <span className="faint" style={{ fontSize: 11 }}>丢包</span>
-          <span className="num" style={{ fontWeight: 600, color: t.loss > 0 ? "var(--red)" : "var(--text)" }}>{t.hasData ? t.loss + "%" : "—"}</span>
+          <span className="num" style={{ fontWeight: 600, color: t.loss > 0 ? "var(--red)" : "var(--text)" }}>{t.hasData ? fmtNum(t.loss) + "%" : "—"}</span>
         </div>
         <Sparkline data={t.spark} tone={t.alerting ? "red" : DB.latencyLevel(t.latency)} width={72} height={26} />
       </div>
@@ -132,7 +132,7 @@ function ResourceMini({ node, delay }) {
     <div className="card card-pad fade-up" style={{ animationDelay: (delay || 0) + "ms", padding: "14px 16px" }}>
       <div className="row between" style={{ marginBottom: 10 }}>
         <span className="row gap-6" style={{ fontWeight: 540, fontSize: 13 }}><StatusDot status={n.status} pulse={!online} />{n.name}</span>
-        <span className="faint" style={{ fontSize: 11 }}>{online ? "load " + n.load : "离线"}</span>
+        <span className="faint" style={{ fontSize: 11 }}>{online ? "load " + fmtNum(n.load) : "离线"}</span>
       </div>
       {online ? (
         <div className="col gap-6">

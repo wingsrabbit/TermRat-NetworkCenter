@@ -17,13 +17,15 @@ function usageLevel(pct) {
 }
 
 // —— 显示格式化 —— //
-/** 延迟：最多 2 位小数（去尾零）。null → "—" */
-export function fmtLatency(ms) {
-  if (ms == null || ms === "") return "—";
-  const n = Number(ms);
+/** 数字：固定保留 2 位小数。null/非数 → "—"。用于延迟/抖动/丢包等所有数值显示。 */
+export function fmtNum(v) {
+  if (v == null || v === "") return "—";
+  const n = Number(v);
   if (!isFinite(n)) return "—";
-  return String(+n.toFixed(2));
+  return n.toFixed(2);
 }
+/** 延迟显示（= fmtNum，固定 2 位小数） */
+export const fmtLatency = fmtNum;
 /** 流量：入参 MB/s，按量级自适应 MB/s · KB/s · B/s */
 export function fmtTraffic(mbps) {
   const v = Number(mbps) || 0;

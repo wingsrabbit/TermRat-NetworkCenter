@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useApp } from "../store.jsx";
 import { Ic, Tag, Empty } from "../ui.jsx";
-import { DB, fmtLatency } from "../data.js";
+import { DB, fmtLatency, fmtNum } from "../data.js";
 import { ProbeMiniChart } from "../charts.jsx";
 import { PublicShell, MiniStat } from "./NodeDetail.jsx";
 import { getTaskDetail, getTaskHistory } from "../api.js";
@@ -60,8 +60,8 @@ export function ProbeDetail({ id }) {
     return {
       cur: last && last.latency != null ? last.latency : null,
       avg: avg != null ? avg : null,
-      loss: Math.round(lossAvg * 10) / 10,
-      avail: Math.round((okCount / hist.length) * 1000) / 10,
+      loss: lossAvg,
+      avail: (okCount / hist.length) * 100,
     };
   }, [hist]);
 
@@ -101,8 +101,8 @@ export function ProbeDetail({ id }) {
       <div className="grid mini fade-up" style={{ marginBottom: 18 }}>
         <MiniStat label="当前延迟" value={stats.cur != null ? fmtLatency(stats.cur) : "—"} suffix={stats.cur != null ? "ms" : ""} icon="activity" level={stats.cur != null ? DB.latencyLevel(stats.cur) : null} />
         <MiniStat label="平均延迟" value={stats.avg != null ? fmtLatency(stats.avg) : "—"} suffix={stats.avg != null ? "ms" : ""} icon="signal" level={stats.avg != null ? DB.latencyLevel(stats.avg) : null} />
-        <MiniStat label="丢包率" value={stats.loss != null ? stats.loss : "—"} suffix={stats.loss != null ? "%" : ""} icon="warnTri" tone={stats.loss > 0 ? "var(--red)" : "var(--green)"} />
-        <MiniStat label="可用率" value={stats.avail != null ? stats.avail : "—"} suffix={stats.avail != null ? "%" : ""} icon="checkCircle" tone={stats.avail != null && stats.avail < 99 ? "var(--amber)" : "var(--green)"} />
+        <MiniStat label="丢包率" value={stats.loss != null ? fmtNum(stats.loss) : "—"} suffix={stats.loss != null ? "%" : ""} icon="warnTri" tone={stats.loss > 0 ? "var(--red)" : "var(--green)"} />
+        <MiniStat label="可用率" value={stats.avail != null ? fmtNum(stats.avail) : "—"} suffix={stats.avail != null ? "%" : ""} icon="checkCircle" tone={stats.avail != null && stats.avail < 99 ? "var(--amber)" : "var(--green)"} />
       </div>
 
       {/* 历史曲线 */}

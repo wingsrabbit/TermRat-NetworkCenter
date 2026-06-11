@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+## [0.82] - 2026-06-11
+### 变更
+- **数字统一 2 位小数**：新增 `fmtNum`，延迟/抖动/丢包/负载/可用率等数值显示固定 2 位；图表 tooltip（TimeChart/ProbeMiniChart/ResourceChart/TrafficChart）加 valueFormatter，不再出现长浮点（如 583.5203…）。
+- **启用开关配色**：Switch 开态由蓝改绿（关=灰白 / 开=绿），状态更直观。
+
 ## [0.81] - 2026-06-11
 ### 修复
 - **agent 容器崩溃**：agent/Dockerfile 漏拷 v0.8 新增的 `testserver.py`，导致 `import testserver` 失败、容器重启循环。补入 COPY。
