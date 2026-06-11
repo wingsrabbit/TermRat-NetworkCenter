@@ -28,6 +28,24 @@ def _public_node(n):
     return n
 
 
+def _hidden_ip_name_map():
+    """脱敏：返回 {public_ip: name}，仅含 public_hidden=1 的节点（用于把内部目标 IP 换成节点名）。"""
+    m = {}
+    for n in db.list_nodes():
+        if n.get("public_hidden") and n.get("public_ip"):
+            m[n["public_ip"]] = n["name"]
+    return m
+
+
+def _mask_addr(addr, hmap):
+    """把目标地址里出现的"我方隐藏节点 IP"替换成节点名；对外目标(非我方节点)原样不动。"""
+    if addr:
+        for ip, name in hmap.items():
+            if ip in addr:
+                return addr.replace(ip, name)
+    return addr
+
+
 def _int_or(v, default):
     if v is None or v == "":
         return default
@@ -127,6 +145,16 @@ def auth_me():
 @api_bp.get("/public/overview")
 def public_overview():
     data = db.get_overview()
+    # 脱敏：被标记隐藏的节点 → 屏蔽其 IP；指向这些节点的探测目标用节点名替换（对外目标不变）
+    hmap = {}
+    for n in data["nodes"]:
+        if n.get("public_hidden") and n.get("public_ip"):
+            hmap[n["public_ip"]] = n["name"]
+        if n.get("public_hidden"):
+            n["public_ip"] = None
+    if hmap:
+        for t in data["tasks"]:
+            t["target_address"] = _mask_addr(t.get("target_address"), hmap)
     data["nodes"] = [_public_node(n) for n in data["nodes"]]
     data["site"] = {k: db.get_settings().get(k) for k in ("site_title", "site_subtitle")}
     return jsonify(data)
@@ -137,9 +165,15 @@ def public_node_detail(nid):
     n = db.get_node(nid)
     if not n:
         return jsonify({"error": "not found"}), 404
+    hmap = _hidden_ip_name_map()
+    if n.get("public_hidden"):
+        n["public_ip"] = None
     n = _public_node(n)
     n["status"] = db._effective_status(n)
     tasks = db.list_tasks(source_node_id=nid)
+    if hmap:
+        for t in tasks:
+            t["target_address"] = _mask_addr(t.get("target_address"), hmap)
     return jsonify({"node": n, "tasks": tasks})
 
 
@@ -148,6 +182,7 @@ def public_task_detail(tid):
     t = db.get_task(tid)
     if not t:
         return jsonify({"error": "not found"}), 404
+    t["target_address"] = _mask_addr(t.get("target_address"), _hidden_ip_name_map())
     return jsonify({"task": t})
 
 

@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS nodes (
     label_2       TEXT DEFAULT '',
     label_3       TEXT DEFAULT '',
     enabled       INTEGER DEFAULT 1,
+    public_hidden INTEGER DEFAULT 0,
     status        TEXT DEFAULT 'offline',
     last_seen     INTEGER,
     agent_version TEXT,
@@ -170,6 +171,11 @@ _TASK_MIGRATE_COLS = [
     ("alert_status", "TEXT DEFAULT 'normal'"), ("alert_last_ts", "INTEGER"),
 ]
 
+# 老库迁移：nodes 新增列
+_NODE_MIGRATE_COLS = [
+    ("public_hidden", "INTEGER DEFAULT 0"),
+]
+
 
 def init_db():
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -180,6 +186,11 @@ def init_db():
         for col, typ in _TASK_MIGRATE_COLS:      # 老库补列
             try:
                 c.execute(f"ALTER TABLE tasks ADD COLUMN {col} {typ}")
+            except sqlite3.OperationalError:
+                pass
+        for col, typ in _NODE_MIGRATE_COLS:
+            try:
+                c.execute(f"ALTER TABLE nodes ADD COLUMN {col} {typ}")
             except sqlite3.OperationalError:
                 pass
     _ensure_default_admin()
@@ -240,7 +251,7 @@ def get_node_by_token(token):
 
 
 def update_node(nid, **fields):
-    allowed = {"name", "label_1", "label_2", "label_3", "enabled"}
+    allowed = {"name", "label_1", "label_2", "label_3", "enabled", "public_hidden"}
     sets = {k: v for k, v in fields.items() if k in allowed}
     if not sets:
         return

@@ -2,7 +2,7 @@
    ONC — 节点管理（admin）：表格 + 添加/部署/删除 + 一次性 token
    ============================================================ */
 import React, { useState, useEffect, useMemo } from "react";
-import { Ic, Tag, Empty, Modal, Confirm, CodeBlock, useToast } from "../../ui.jsx";
+import { Ic, Tag, Empty, Modal, Confirm, CodeBlock, Switch, useToast } from "../../ui.jsx";
 import { PageHeader, RowBtn, deploySnippet } from "./_common.jsx";
 import { apiListNodes, apiCreateNode, apiDeleteNode, apiUpdateNode, apiRegenNodeToken } from "../../api.js";
 
@@ -20,6 +20,7 @@ function normNode(n) {
     id: n.id, name: n.name,
     label_1: n.label_1 || "", label_2: n.label_2 || "", label_3: n.label_3 || "",
     enabled: !!n.enabled, status: n.status, last_seen: n.last_seen,
+    public_hidden: !!n.public_hidden,
     version: n.agent_version || "—", ip: n.public_ip || "—",
   };
 }
@@ -31,6 +32,7 @@ export function NodesPage() {
   const [modal, setModal] = useState(null);   // {type:'add'} | {type:'token', node:{name,token}}
   const [confirm, setConfirm] = useState(null);
   const [regen, setRegen] = useState(null);   // 待确认「重置 Token」的节点
+  const [edit, setEdit] = useState(null);     // 正在编辑的节点
 
   const reload = async () => {
     try {
@@ -65,6 +67,12 @@ export function NodesPage() {
     await reload();
     setModal({ type: "token", node: { name: res.name || data.name, token: res.token } });
     toast.success("节点已添加，请部署探针");
+  };
+
+  const saveEdit = async (n, data) => {
+    await apiUpdateNode(n.id, data);   // 失败抛出，由弹窗捕获
+    await reload();
+    toast.success(`已更新节点「${data.name || n.name}」`);
   };
 
   const doRegen = async (n) => {
@@ -113,6 +121,7 @@ export function NodesPage() {
                   <td>
                     <div className="actions" style={{ justifyContent: "flex-end" }}>
                       <RowBtn icon="power" label={n.enabled ? "禁用" : "启用"} onClick={() => toggle(n)} />
+                      <RowBtn icon="edit" label="编辑" onClick={() => setEdit(n)} />
                       <RowBtn icon="deploy" label="部署" onClick={() => setRegen(n)} />
                       <RowBtn icon="trash" label="删除" tone="danger" onClick={() => setConfirm(n)} />
                     </div>
@@ -126,6 +135,7 @@ export function NodesPage() {
         {!loaded && <div className="muted" style={{ padding: "16px 20px" }}>加载中…</div>}
       </div>
 
+      {edit && <NodeEditModal node={edit} onClose={() => setEdit(null)} onSave={(data) => saveEdit(edit, data)} />}
       {modal && modal.type === "add" && <NodeFormModal onClose={() => setModal(null)} onCreate={create} />}
       {modal && modal.type === "token" && <TokenModal node={modal.node} onClose={() => setModal(null)} />}
       {confirm && <Confirm title="删除节点" danger confirmText="删除"
@@ -174,6 +184,50 @@ function NodeFormModal({ onClose, onCreate }) {
         ))}
       </div>
       <div className="field hint" style={{ marginTop: 12, marginBottom: 0 }}>标签用于在公开主页和仪表盘中归类筛选，例如「香港 / CN2 GIA / BGP」。</div>
+    </Modal>
+  );
+}
+
+/* —— 节点 编辑 弹窗（名称 / 标签 / 公开脱敏） —— */
+function NodeEditModal({ node, onClose, onSave }) {
+  const [name, setName] = useState(node.name || "");
+  const [labels, setLabels] = useState([node.label_1 || "", node.label_2 || "", node.label_3 || ""]);
+  const [hidden, setHidden] = useState(!!node.public_hidden);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!name.trim()) { setErr("请输入节点名称"); return; }
+    setBusy(true); setErr("");
+    try {
+      await onSave({ name: name.trim(), label_1: labels[0].trim(), label_2: labels[1].trim(), label_3: labels[2].trim(), public_hidden: hidden ? 1 : 0 });
+      onClose();
+    } catch (e) { setErr(e.message || "保存失败"); setBusy(false); }
+  };
+
+  return (
+    <Modal title="编辑节点" onClose={onClose}
+      footer={<React.Fragment><button className="btn" onClick={onClose}>取消</button><button className="btn primary" onClick={submit} disabled={busy}>{busy ? "保存中…" : "保存"}</button></React.Fragment>}>
+      {err && <div className="warn-note"><Ic name="warnTri" />{err}</div>}
+      <div className="field">
+        <label className="req">节点名称</label>
+        <input className={"input" + (err && !name ? " error" : "")} value={name} onChange={(e) => { setName(e.target.value); setErr(""); }} autoFocus />
+      </div>
+      <div className="row gap-12">
+        {["标签 1", "标签 2", "标签 3"].map((l, i) => (
+          <div className="field grow" key={i} style={{ marginBottom: 0 }}>
+            <label>{l}</label>
+            <input className="input" value={labels[i]} onChange={(e) => setLabels((t) => t.map((x, j) => j === i ? e.target.value : x))} placeholder={i === 0 ? "地区" : i === 1 ? "线路" : "可选"} />
+          </div>
+        ))}
+      </div>
+      <div className="field" style={{ marginTop: 16, marginBottom: 0, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ marginBottom: 3 }}>公开页隐藏本节点敏感信息</label>
+          <div className="hint" style={{ margin: 0 }}>开启后：公开主页 / 详情屏蔽本节点公网 IP；其它节点指向本节点的探测目标用「节点名」替换（对外公共目标不受影响）。</div>
+        </div>
+        <Switch on={hidden} onChange={setHidden} />
+      </div>
     </Modal>
   );
 }

@@ -115,7 +115,7 @@ export function NodeDetail({ id }) {
           <div className="row gap-6 wrap">{tags.map((t) => <Tag key={t}>{t}</Tag>)}</div>
         </div>
         <div className="row gap-24 wrap" style={{ marginTop: 14, fontSize: 13 }}>
-          <span className="muted">IP <span className="mono" style={{ color: "var(--text)" }}>{ip}</span></span>
+          {ip !== "-" && <span className="muted">IP <span className="mono" style={{ color: "var(--text)" }}>{ip}</span></span>}
           <span className="muted">版本 <span className="mono" style={{ color: "var(--text)" }}>v{version}</span></span>
           <span className="muted">在线时长 <span className="num" style={{ color: "var(--text)" }}>{online ? fmtUptime(node.uptime_days) : "—"}</span></span>
         </div>

@@ -165,7 +165,7 @@ export function NodeCard({ node, delay, onClick }) {
           <StatusDot status={n.status} pulse={!online} />
           <div>
             <div style={{ fontWeight: 600, fontSize: 14.5 }}>{n.name}</div>
-            <div className="faint" style={{ fontSize: 11.5 }}>{n.ip} · v{n.version}</div>
+            <div className="faint" style={{ fontSize: 11.5 }}>{n.ip && n.ip !== "-" ? n.ip + " · " : ""}v{n.version}</div>
           </div>
         </div>
         <Tag tone={online ? "green" : "red"}>{online ? "在线" : "离线"}</Tag>
