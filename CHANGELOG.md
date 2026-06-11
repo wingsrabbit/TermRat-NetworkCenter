@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [0.5] - 2026-06-11
+### 新增
+- **管理端鉴权**：用户表（pbkdf2 密码）+ 会话 token + 角色（admin/readonly）；/api/auth/login|logout|me；首启自动建默认管理员（admin/admin，可经 env 改）。
+- **管理 API**：任务编辑（PATCH，含告警阈值）、用户 / 告警渠道 / 设置 CRUD、节点 token 重生成、节点/任务详情、告警历史（登录可见）。
+- **告警引擎**：任务阈值（延迟/丢包/连续失败）评估 → 触发/恢复事件 + alert_history + 任务 alert_status + webhook 异步通知 + 冷却。
+- 老库 ALTER TABLE 迁移补告警列；鉴权同时支持会话 token 与静态 X-Admin-Token（CLI 引导）。
+
 ## [0.41] - 2026-06-10
 ### 修复
 - agent UDP 探测：对 53 端口改发合法 DNS 查询（dnspython 构包），可拿到真实响应与延迟；其它端口仍用通用单字节探测。
