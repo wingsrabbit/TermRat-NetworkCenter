@@ -21,10 +21,55 @@ CERT_DIR = os.path.join(DATA_DIR, "certs")
 CADDY_ADMIN = os.environ.get("CADDY_ADMIN", "localhost:2019")
 UPSTREAM = os.environ.get("WEB_UPSTREAM", "localhost:8080")
 
-CERT_PATH = os.path.join(CERT_DIR, "web.crt")
+CERT_PATH = os.path.join(CERT_DIR, "web.crt")     # 上传的自有证书（https-custom）
 KEY_PATH = os.path.join(CERT_DIR, "web.key")
+SELF_CERT = os.path.join(CERT_DIR, "self.crt")    # 自生成的自签证书（https-selfsigned）
+SELF_KEY = os.path.join(CERT_DIR, "self.key")
 
 VALID_MODES = ("http", "https-le", "https-custom", "https-selfsigned")
+
+
+def ensure_selfsigned_cert(host=None):
+    """生成自签证书（若不存在）。用显式 cert/key 而非 Caddy `tls internal`，
+    可对任意 SNI（含纯 IP 访问）出示同一张证书，浏览器告警后仍可访问。返回 (cert, key)。"""
+    if os.path.isfile(SELF_CERT) and os.path.isfile(SELF_KEY):
+        return SELF_CERT, SELF_KEY
+    os.makedirs(CERT_DIR, exist_ok=True)
+    import ipaddress
+    from datetime import datetime, timedelta, timezone
+    from cryptography import x509
+    from cryptography.x509.oid import NameOID
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    pkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    cn = host or "ONC"
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, cn)])
+    sans = [x509.DNSName("localhost"), x509.IPAddress(ipaddress.ip_address("127.0.0.1"))]
+    if host:
+        try:
+            sans.append(x509.IPAddress(ipaddress.ip_address(host)))
+        except ValueError:
+            sans.append(x509.DNSName(host))
+    cert = (x509.CertificateBuilder()
+            .subject_name(name).issuer_name(name)
+            .public_key(pkey.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.now(timezone.utc) - timedelta(days=1))
+            .not_valid_after(datetime.now(timezone.utc) + timedelta(days=3650))
+            .add_extension(x509.SubjectAlternativeName(sans), critical=False)
+            .sign(pkey, hashes.SHA256()))
+    with open(SELF_CERT, "wb") as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+    with open(SELF_KEY, "wb") as f:
+        f.write(pkey.private_bytes(serialization.Encoding.PEM,
+                serialization.PrivateFormat.TraditionalOpenSSL,
+                serialization.NoEncryption()))
+    try:
+        os.chmod(SELF_KEY, 0o600)
+    except OSError:
+        pass
+    return SELF_CERT, SELF_KEY
 
 
 def _http_port(s):
@@ -65,8 +110,8 @@ def generate_caddyfile(s):
 
     if mode == "https-selfsigned":
         site = domain if domain else (":" + sp)
-        glb = "{\n\tadmin %s\n\tlocal_certs\n}\n\n" % CADDY_ADMIN
-        body = "%s {\n\ttls internal\n\treverse_proxy %s\n}\n" % (site, UPSTREAM)
+        glb = "{\n\tadmin %s\n}\n\n" % CADDY_ADMIN
+        body = "%s {\n\ttls %s %s\n\treverse_proxy %s\n}\n" % (site, SELF_CERT, SELF_KEY, UPSTREAM)
         body += "\n:%s {\n\tredir https://{host}{uri}\n}\n" % hp
         return glb + body
 
@@ -77,6 +122,8 @@ def generate_caddyfile(s):
 
 def write_caddyfile(s):
     os.makedirs(os.path.dirname(CADDYFILE_PATH), exist_ok=True)
+    if (s.get("web_mode") or "").strip() == "https-selfsigned":
+        ensure_selfsigned_cert((s.get("web_domain") or "").strip() or None)
     txt = generate_caddyfile(s)
     with open(CADDYFILE_PATH, "w", encoding="utf-8") as f:
         f.write(txt)

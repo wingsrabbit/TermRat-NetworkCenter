@@ -1,3 +1,5 @@
 Flask==3.0.3
 gunicorn==22.0.0
 supervisor==4.2.5
+setuptools>=69,<81    # supervisor 依赖 pkg_resources；setuptools 81 起移除了它，故钉 <81
+cryptography==46.0.3  # https-selfsigned 模式自生成自签证书

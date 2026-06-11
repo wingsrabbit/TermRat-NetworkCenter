@@ -11,7 +11,7 @@
   - `http`（默认）：纯 HTTP，监听 80；
   - `https-le`：**Let's Encrypt** 自动签发（填域名，需解析到本机 + 80/443 可达）；
   - `https-custom`：**上传自有证书**（PEM 证书 + 私钥，存 `/app/data/certs`）；
-  - `https-selfsigned`：内部 CA 自签，适合纯 IP 测试。
+  - `https-selfsigned`：自生成自签证书（cryptography，对任意 SNI/纯 IP 出示同证书），适合 IP-only 测试机。
 - **端口可配**：web HTTP/HTTPS 端口可改；agent **上报端口**走独立 8080（与 web TLS 解耦，兼容现有 agent 不动）；agent **互测端口**（HTTP/HTTPS/UDP）此前已支持 `NC_TEST_*` env 自定义，避免默认端口被屏蔽。
 ### 变更
 - **容器改双进程**：`supervisord` 同容器拉起 gunicorn + caddy（均 autorestart），入口 `deploy/entrypoint.sh` 启动时据 DB 设置生成 Caddyfile（带兜底 HTTP 配置）。Caddy 证书/数据落 `/app/data/caddy-data`（卷持久化，LE 证书跨重启复用）。
