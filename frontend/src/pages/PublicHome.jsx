@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { useApp, ThemeToggle, Brand } from "../store.jsx";
 import { Ic, Tag, StatusDot, Bar, Empty, Latency } from "../ui.jsx";
 import { Sparkline } from "../sparkline.jsx";
-import { DB, fmtTraffic, fmtUptime } from "../data.js";   // 纯函数 usageLevel + 显示格式化
+import { DB, fmtTraffic, fmtUptime, fmtNum } from "../data.js";   // 纯函数 usageLevel + 显示格式化
 import { useOverview } from "../api.js";
 
 export function PublicHome() {
@@ -114,7 +114,7 @@ export function PublicHome() {
                       </td>
                       <td><Tag tone={db.protoColors[t.proto]} className="proto-tag">{t.proto}</Tag></td>
                       <td><Latency ms={t.latency} /></td>
-                      <td className="num" style={{ color: t.loss > 0 ? "var(--red)" : "var(--text-2)", fontWeight: t.loss > 0 ? 600 : 400 }}>{t.hasData ? t.loss + "%" : "—"}</td>
+                      <td className="num" style={{ color: t.loss > 0 ? "var(--red)" : "var(--text-2)", fontWeight: t.loss > 0 ? 600 : 400 }}>{t.hasData ? fmtNum(t.loss) + "%" : "—"}</td>
                       <td><Sparkline data={t.spark} tone={t.alerting ? "red" : "green"} width={120} /></td>
                       <td>
                         {t.alerting

@@ -25,6 +25,9 @@ export function reduceMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+// 统一数值格式化：固定 2 位小数（图表 tooltip 用，避免显示长浮点）
+const fmt2 = (v) => (v == null || v === "" ? "-" : (+v).toFixed(2));
+
 /* —— 通用 ECharts 容器：传入 option 构建器，处理 init/resize/主题重绘/销毁 —— */
 export function EChart({ build, deps, height }) {
   const elRef = useRef();
@@ -84,6 +87,7 @@ export function TimeChart({ data, range }) {
         textStyle: { color: c.isDark ? "#e6e8ec" : "#1f2329", fontSize: 12 },
         extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;",
         axisPointer: { type: "line", lineStyle: { color: c.border } },
+        valueFormatter: fmt2,
       },
       xAxis: {
         type: "time",
@@ -160,7 +164,7 @@ export function ProbeMiniChart({ data, height }) {
     animation: !reduce, animationDuration: 650, animationEasing: "cubicOut",
     grid: { left: 48, right: hasLoss ? 46 : 18, top: 30, bottom: 28 },
     legend: { top: 4, right: 6, icon: "roundRect", itemWidth: 13, itemHeight: 7, itemGap: 14, textStyle: { color: c.text2, fontSize: 11.5 } },
-    tooltip: { trigger: "axis", backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, textStyle: { color: c.isDark ? "#e6e8ec" : "#1f2329", fontSize: 12 }, extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;", axisPointer: { lineStyle: { color: c.border } } },
+    tooltip: { trigger: "axis", backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, textStyle: { color: c.isDark ? "#e6e8ec" : "#1f2329", fontSize: 12 }, extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;", axisPointer: { lineStyle: { color: c.border } }, valueFormatter: fmt2 },
     xAxis: { type: "time", axisLine: { lineStyle: { color: c.border } }, axisLabel: { color: c.text2, fontSize: 11, hideOverlap: true }, axisTick: { show: false }, splitLine: { show: false } },
     yAxis: [
       { type: "value", name: "ms", nameTextStyle: { color: c.text2, fontSize: 11 }, axisLabel: { color: c.text2, fontSize: 11 }, splitLine: { lineStyle: { color: c.border, type: "dashed" } }, axisLine: { show: false }, axisTick: { show: false } },
@@ -186,7 +190,7 @@ export function ResourceChart({ data, height }) {
     color: [c.primary, c.green, c.amber],
     grid: { left: 44, right: 18, top: 30, bottom: 28 },
     legend: { top: 4, right: 6, icon: "roundRect", itemWidth: 13, itemHeight: 7, itemGap: 14, textStyle: { color: c.text2, fontSize: 11.5 } },
-    tooltip: { trigger: "axis", backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, textStyle: { color: c.isDark ? "#e6e8ec" : "#1f2329", fontSize: 12 }, extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;", valueFormatter: (v) => v + " %" },
+    tooltip: { trigger: "axis", backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, textStyle: { color: c.isDark ? "#e6e8ec" : "#1f2329", fontSize: 12 }, extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;", valueFormatter: (v) => fmt2(v) + " %" },
     xAxis: { type: "time", axisLine: { lineStyle: { color: c.border } }, axisLabel: { color: c.text2, fontSize: 11, hideOverlap: true }, axisTick: { show: false }, splitLine: { show: false } },
     yAxis: { type: "value", name: "%", min: 0, max: 100, nameTextStyle: { color: c.text2, fontSize: 11 }, axisLabel: { color: c.text2, fontSize: 11 }, splitLine: { lineStyle: { color: c.border, type: "dashed" } }, axisLine: { show: false }, axisTick: { show: false } },
     series: [
@@ -211,7 +215,7 @@ export function TrafficChart({ data, height }) {
     color: [c.green, c.primary],
     grid: { left: 52, right: 18, top: 30, bottom: 28 },
     legend: { top: 4, right: 6, icon: "roundRect", itemWidth: 13, itemHeight: 7, itemGap: 14, textStyle: { color: c.text2, fontSize: 11.5 } },
-    tooltip: { trigger: "axis", backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, textStyle: { color: c.isDark ? "#e6e8ec" : "#1f2329", fontSize: 12 }, extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;", valueFormatter: (v) => v + " " + unit },
+    tooltip: { trigger: "axis", backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, textStyle: { color: c.isDark ? "#e6e8ec" : "#1f2329", fontSize: 12 }, extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;", valueFormatter: (v) => fmt2(v) + " " + unit },
     xAxis: { type: "time", axisLine: { lineStyle: { color: c.border } }, axisLabel: { color: c.text2, fontSize: 11, hideOverlap: true }, axisTick: { show: false }, splitLine: { show: false } },
     yAxis: { type: "value", name: unit, nameTextStyle: { color: c.text2, fontSize: 11 }, axisLabel: { color: c.text2, fontSize: 11 }, splitLine: { lineStyle: { color: c.border, type: "dashed" } }, axisLine: { show: false }, axisTick: { show: false } },
     series: [
