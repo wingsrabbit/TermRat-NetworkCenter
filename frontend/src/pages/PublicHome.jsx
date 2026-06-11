@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { useApp, ThemeToggle, Brand } from "../store.jsx";
 import { Ic, Tag, StatusDot, Bar, Empty, Latency } from "../ui.jsx";
 import { Sparkline } from "../sparkline.jsx";
-import { DB } from "../data.js";            // 仅用其纯函数 usageLevel
+import { DB, fmtTraffic, fmtUptime } from "../data.js";   // 纯函数 usageLevel + 显示格式化
 import { useOverview } from "../api.js";
 
 export function PublicHome() {
@@ -184,9 +184,9 @@ export function NodeCard({ node, delay, onClick }) {
           </div>
           <div className="divider" style={{ margin: "14px 0" }} />
           <div className="row between" style={{ fontSize: 12.5 }}>
-            <span className="row gap-4 muted"><Ic name="arrowDown" size={13} style={{ color: "var(--green)" }} /><span className="num">{n.netIn}</span> <span className="faint">↓ MB/s</span></span>
-            <span className="row gap-4 muted"><Ic name="arrowUp" size={13} style={{ color: "var(--primary)" }} /><span className="num">{n.netOut}</span> <span className="faint">↑ MB/s</span></span>
-            <span className="row gap-4 muted"><Ic name="clock" size={13} /><span className="num">{n.uptimeDays}d</span></span>
+            <span className="row gap-4 muted" title="下行"><Ic name="arrowDown" size={13} style={{ color: "var(--green)" }} /><span className="num">{fmtTraffic(n.netIn)}</span></span>
+            <span className="row gap-4 muted" title="上行"><Ic name="arrowUp" size={13} style={{ color: "var(--primary)" }} /><span className="num">{fmtTraffic(n.netOut)}</span></span>
+            <span className="row gap-4 muted" title="在线时长"><Ic name="clock" size={13} /><span className="num">{fmtUptime(n.uptimeDays)}</span></span>
           </div>
           <div className="row between" style={{ marginTop: 12, alignItems: "flex-end" }}>
             <span className="faint" style={{ fontSize: 11.5 }}>CPU 趋势</span>

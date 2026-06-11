@@ -5,7 +5,7 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "../../store.jsx";
 import { Ic, Tag, StatusDot, Bar, Empty, Latency, StatCard } from "../../ui.jsx";
 import { Sparkline } from "../../sparkline.jsx";
-import { DB } from "../../data.js";
+import { DB, fmtTraffic } from "../../data.js";
 import { useOverview } from "../../api.js";
 
 const PROTOS = ["全部", "ICMP", "TCP", "UDP", "HTTP", "DNS"];
@@ -21,7 +21,7 @@ export function Dashboard() {
     if (!db) return 0;
     const arr = db.tasks.map((t) => t.latency).filter((v) => v != null);
     if (!arr.length) return 0;
-    return Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10;
+    return Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 100) / 100;
   }, [db]);
 
   if (!db) {
@@ -48,7 +48,7 @@ export function Dashboard() {
         <StatCard label="节点数" icon="nodes" value={db.kpi.nodesTotal} delay={0} />
         <StatCard label="在线节点" icon="checkCircle" value={db.kpi.online} tone="var(--green)" sub={`离线 ${db.kpi.offline}`} delay={40} />
         <StatCard label="活跃告警" icon="bell" value={db.kpi.alerts} tone={db.kpi.alerts ? "var(--red)" : "var(--green)"} delay={80} />
-        <StatCard label="平均延迟" icon="activity" value={avgLatency} decimals={1} suffix=" ms" tone={avgLatency >= 200 ? "var(--red)" : avgLatency >= 50 ? "var(--amber)" : "var(--green)"} delay={120} />
+        <StatCard label="平均延迟" icon="activity" value={avgLatency} decimals={2} suffix=" ms" tone={avgLatency >= 200 ? "var(--red)" : avgLatency >= 50 ? "var(--amber)" : "var(--green)"} delay={120} />
       </div>
 
       {/* 筛选条 */}
@@ -140,8 +140,8 @@ function ResourceMini({ node, delay }) {
           <Bar label="内存" value={n.mem} />
           <Bar label="磁盘" value={n.disk} />
           <div className="row between faint" style={{ fontSize: 11, marginTop: 2 }}>
-            <span>↓ <span className="num">{n.netIn}</span> MB/s</span>
-            <span>↑ <span className="num">{n.netOut}</span> MB/s</span>
+            <span>↓ <span className="num">{fmtTraffic(n.netIn)}</span></span>
+            <span>↑ <span className="num">{fmtTraffic(n.netOut)}</span></span>
           </div>
         </div>
       ) : <div className="faint" style={{ fontSize: 12, padding: "8px 0" }}>最后在线 {n.lastSeen}</div>}

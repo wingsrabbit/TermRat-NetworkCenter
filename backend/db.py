@@ -448,6 +448,52 @@ def get_task_history(tid, minutes=30):
     return [dict(r) for r in rows]
 
 
+# 各时间档 → (窗口秒, 分桶秒)；分桶后每档约 60–96 个均匀点，长档不再被 24h 卡死
+_RANGE_BUCKETS = {
+    "30m": (1800, 30), "1h": (3600, 60), "6h": (21600, 300), "24h": (86400, 900),
+    "3d": (259200, 3600), "7d": (604800, 7200), "14d": (1209600, 14400), "30d": (2592000, 28800),
+}
+
+
+def _bucket_unit_label(sec):
+    if sec < 60:
+        return "%d秒" % sec
+    if sec < 3600:
+        return "%d分钟" % (sec // 60)
+    if sec < 86400:
+        return "%d小时" % (sec // 3600)
+    return "%d天" % (sec // 86400)
+
+
+def get_task_history_bucketed(tid, range_key):
+    """按时间档分桶聚合历史：每桶取均值（延迟/抖动/丢包）+ 成功率，时间戳对齐到桶起点。
+    返回 {history, bucket_seconds, buckets_total, buckets_with_data, unit}。"""
+    window, bucket = _RANGE_BUCKETS.get(range_key, _RANGE_BUCKETS["1h"])
+    bucket_ms = bucket * 1000
+    cutoff = now_ms() - window * 1000
+    with get_conn() as c:
+        rows = c.execute(
+            "SELECT (ts/?)*? AS b, AVG(latency) lat, AVG(jitter) jit, AVG(packet_loss) loss, "
+            "AVG(success)*100.0 sr, COUNT(*) n FROM results "
+            "WHERE task_id=? AND ts>=? GROUP BY b ORDER BY b",
+            (bucket_ms, bucket_ms, tid, cutoff)).fetchall()
+    hist = [{
+        "ts": int(r["b"]),
+        "latency": round(r["lat"], 3) if r["lat"] is not None else None,
+        "jitter": round(r["jit"], 3) if r["jit"] is not None else None,
+        "packet_loss": round(r["loss"], 3) if r["loss"] is not None else None,
+        "success_ratio": round(r["sr"], 1) if r["sr"] is not None else None,
+        "samples": r["n"],
+    } for r in rows]
+    return {
+        "history": hist,
+        "bucket_seconds": bucket,
+        "buckets_total": window // bucket,
+        "buckets_with_data": len(hist),
+        "unit": _bucket_unit_label(bucket),
+    }
+
+
 # ========================= 用户 / 会话 / 鉴权 =========================
 def hash_password(pw):
     salt = secrets.token_bytes(16)

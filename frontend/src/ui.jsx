@@ -2,7 +2,7 @@
    TermRat — 共享 UI 原语 + 图标（ESM）
    ============================================================ */
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
-import { DB } from "./data.js";
+import { DB, fmtLatency } from "./data.js";
 
 /* ---------------- 图标（线性，24 viewBox 统一 stroke） ---------------- */
 export function Icon({ d, paths, size, fill, sw, children, style }) {
@@ -251,5 +251,5 @@ export function Latency({ ms, big }) {
   if (ms == null) return <span className="muted">—</span>;
   const lv = DB.latencyLevel(ms);
   const color = lv === "green" ? "var(--green)" : lv === "amber" ? "var(--amber)" : lv === "red" ? "var(--red)" : "var(--text-2)";
-  return <span className="num" style={{ color, fontWeight: 600, fontSize: big ? 18 : "inherit" }}>{ms}<span style={{ fontSize: "0.75em", fontWeight: 400 }}> ms</span></span>;
+  return <span className="num" style={{ color, fontWeight: 600, fontSize: big ? 18 : "inherit" }}>{fmtLatency(ms)}<span style={{ fontSize: "0.75em", fontWeight: 400 }}> ms</span></span>;
 }

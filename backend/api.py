@@ -158,6 +158,10 @@ def public_node_history(nid):
 
 @api_bp.get("/public/task/<tid>/history")
 def public_task_history(tid):
+    # ?range=30m|1h|6h|24h|3d|7d|14d|30d → 分桶聚合（均匀点 + 元信息）；否则 ?minutes= 原始点
+    rng = request.args.get("range")
+    if rng:
+        return jsonify(db.get_task_history_bucketed(tid, rng))
     return jsonify({"history": db.get_task_history(tid, _clamp_minutes(request.args.get("minutes")))})
 
 

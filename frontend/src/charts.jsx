@@ -200,18 +200,23 @@ export function ResourceChart({ data, height }) {
 
 /* —— 公开版：节点流量曲线（↓in 绿 / ↑out 蓝，固定 30 分钟） —— */
 export function TrafficChart({ data, height }) {
-  const peak = Math.max(...data.map((d) => Math.max(d.netIn, d.netOut)));
+  // 按峰值自适应单位：MB/s · KB/s · B/s（避免空闲机的 KB 级流量显示成 0）
+  const peak = Math.max(0, ...data.map((d) => Math.max(d.netIn || 0, d.netOut || 0)));
+  let unit = "MB/s", scale = 1;
+  if (peak < 1 / 1024) { unit = "B/s"; scale = 1024 * 1024; }
+  else if (peak < 1) { unit = "KB/s"; scale = 1024; }
+  const sv = (v) => Math.round((v || 0) * scale * 100) / 100;
   const build = (c, reduce) => ({
     animation: !reduce, animationDuration: 650, animationEasing: "cubicOut",
     color: [c.green, c.primary],
     grid: { left: 52, right: 18, top: 30, bottom: 28 },
     legend: { top: 4, right: 6, icon: "roundRect", itemWidth: 13, itemHeight: 7, itemGap: 14, textStyle: { color: c.text2, fontSize: 11.5 } },
-    tooltip: { trigger: "axis", backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, textStyle: { color: c.isDark ? "#e6e8ec" : "#1f2329", fontSize: 12 }, extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;", valueFormatter: (v) => v + " MB/s" },
+    tooltip: { trigger: "axis", backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, textStyle: { color: c.isDark ? "#e6e8ec" : "#1f2329", fontSize: 12 }, extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,0.12);border-radius:8px;", valueFormatter: (v) => v + " " + unit },
     xAxis: { type: "time", axisLine: { lineStyle: { color: c.border } }, axisLabel: { color: c.text2, fontSize: 11, hideOverlap: true }, axisTick: { show: false }, splitLine: { show: false } },
-    yAxis: { type: "value", name: "MB/s", nameTextStyle: { color: c.text2, fontSize: 11 }, axisLabel: { color: c.text2, fontSize: 11 }, splitLine: { lineStyle: { color: c.border, type: "dashed" } }, axisLine: { show: false }, axisTick: { show: false } },
+    yAxis: { type: "value", name: unit, nameTextStyle: { color: c.text2, fontSize: 11 }, axisLabel: { color: c.text2, fontSize: 11 }, splitLine: { lineStyle: { color: c.border, type: "dashed" } }, axisLine: { show: false }, axisTick: { show: false } },
     series: [
-      { name: "↓ 下行", type: "line", data: data.map((d) => [d.ts, d.netIn]), smooth: true, showSymbol: false, lineStyle: { width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: "rgba(24,160,88,0.22)" }, { offset: 1, color: "rgba(24,160,88,0.01)" }]) } },
-      { name: "↑ 上行", type: "line", data: data.map((d) => [d.ts, d.netOut]), smooth: true, showSymbol: false, lineStyle: { width: 2 } },
+      { name: "↓ 下行", type: "line", data: data.map((d) => [d.ts, sv(d.netIn)]), smooth: true, showSymbol: false, lineStyle: { width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: "rgba(24,160,88,0.22)" }, { offset: 1, color: "rgba(24,160,88,0.01)" }]) } },
+      { name: "↑ 上行", type: "line", data: data.map((d) => [d.ts, sv(d.netOut)]), smooth: true, showSymbol: false, lineStyle: { width: 2 } },
     ],
   });
   return <EChart build={build} deps={[data]} height={height || 220} />;

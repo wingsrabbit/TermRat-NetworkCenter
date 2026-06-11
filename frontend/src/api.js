@@ -22,8 +22,8 @@ function normalize(raw) {
     id: n.id, name: n.name, region: n.region || "", tags: n.tags || [], status: n.status,
     cpu: Math.round(n.cpu ?? 0), mem: Math.round(n.mem ?? 0), disk: Math.round(n.disk ?? 0),
     load: n.load ?? 0,
-    netIn: +(n.net_in ?? 0).toFixed(1), netOut: +(n.net_out ?? 0).toFixed(1),
-    uptimeDays: Math.round(n.uptime_days ?? 0),
+    netIn: n.net_in ?? 0, netOut: n.net_out ?? 0,
+    uptimeDays: n.uptime_days ?? 0,
     ip: n.public_ip || "-", version: n.agent_version || "?",
     spark: (n.spark || []).map((v) => Math.round(v)),
     lastSeen: relTime(n.last_seen),
@@ -89,6 +89,10 @@ export function getNodeHistory(id, minutes = 30) {
 }
 export function getTaskHistory(id, minutes = 30) {
   return fetch(`/api/public/task/${id}/history?minutes=${minutes}`).then((r) => r.json());
+}
+/** 分桶聚合历史（管理端任务详情按时间档用）：返回 {history, bucket_seconds, buckets_total, buckets_with_data, unit} */
+export function getTaskHistoryRange(id, range) {
+  return fetch(`/api/public/task/${id}/history?range=${range}`).then((r) => r.json());
 }
 
 /* ============================================================

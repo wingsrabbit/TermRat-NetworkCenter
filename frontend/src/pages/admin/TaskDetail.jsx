@@ -6,7 +6,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useApp } from "../../store.jsx";
 import { Ic, Tag, Empty, StatCard } from "../../ui.jsx";
 import { TimeChart } from "../../charts.jsx";
-import { getTaskDetail, getTaskHistory } from "../../api.js";
+import { getTaskDetail, getTaskHistoryRange } from "../../api.js";
 
 const PROTO_COLORS = { ICMP: "blue", TCP: "green", UDP: "amber", HTTP: "blue", DNS: "green" };
 
@@ -29,6 +29,7 @@ export function TaskDetail({ taskId }) {
   const [range, setRange] = useState("1h");
   const [loading, setLoading] = useState(true);
   const [hist, setHist] = useState([]);
+  const [meta, setMeta] = useState(null);   // 分桶元信息 {bucket_seconds, buckets_total, buckets_with_data, unit}
 
   // 任务元信息（随轮询刷新告警状态）
   useEffect(() => {
@@ -41,16 +42,16 @@ export function TaskDetail({ taskId }) {
     return () => { alive = false; };
   }, [taskId, tick]);
 
-  // 历史（随范围 + 轮询刷新）
+  // 历史（按时间档后端分桶聚合 + 轮询刷新）
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    const r = RANGES.find((x) => x.k === range) || RANGES[1];
-    getTaskHistory(taskId, r.minutes).then((h) => {
+    getTaskHistoryRange(taskId, range).then((d) => {
       if (!alive) return;
-      setHist(h && h.history ? h.history : []);
+      setHist(d && d.history ? d.history : []);
+      setMeta(d || null);
       setLoading(false);
-    }).catch(() => { if (alive) { setHist([]); setLoading(false); } });
+    }).catch(() => { if (alive) { setHist([]); setMeta(null); setLoading(false); } });
     return () => { alive = false; };
   }, [range, taskId, tick]);
 
@@ -114,11 +115,11 @@ export function TaskDetail({ taskId }) {
           <div key={i} className="card card-pad"><div className="skel" style={{ height: 14, width: 70, marginBottom: 12 }} /><div className="skel" style={{ height: 28, width: 90 }} /></div>
         )) : (
           <React.Fragment>
-            <StatCard label="平均延迟" icon="activity" value={Math.round(stats.avg * 10) / 10} decimals={1} suffix=" ms" tone={stats.avg >= 200 ? "var(--red)" : stats.avg >= 50 ? "var(--amber)" : "var(--green)"} />
-            <StatCard label="P95 延迟" icon="signal" value={Math.round(stats.p95 * 10) / 10} decimals={1} suffix=" ms" />
-            <StatCard label="窗口抖动" icon="activity" value={Math.round(stats.jit * 10) / 10} decimals={1} suffix=" ms" tone="var(--amber)" />
-            <StatCard label="平均丢包" icon="warnTri" value={Math.round(stats.loss * 10) / 10} decimals={1} suffix=" %" tone={stats.loss > 0 ? "var(--red)" : "var(--green)"} />
-            <StatCard label="数据点数" icon="dashboard" value={stats.points} />
+            <StatCard label="平均延迟" icon="activity" value={stats.avg} decimals={2} suffix=" ms" tone={stats.avg >= 200 ? "var(--red)" : stats.avg >= 50 ? "var(--amber)" : "var(--green)"} />
+            <StatCard label="P95 延迟" icon="signal" value={stats.p95} decimals={2} suffix=" ms" />
+            <StatCard label="窗口抖动" icon="activity" value={stats.jit} decimals={2} suffix=" ms" tone="var(--amber)" />
+            <StatCard label="平均丢包" icon="warnTri" value={stats.loss} decimals={2} suffix=" %" tone={stats.loss > 0 ? "var(--red)" : "var(--green)"} />
+            <StatCard label="数据点数" icon="dashboard" value={meta ? meta.buckets_with_data : stats.points} sub={meta ? `共 ${meta.buckets_total} 桶 · 每${meta.unit}` : ""} />
           </React.Fragment>
         )}
       </div>

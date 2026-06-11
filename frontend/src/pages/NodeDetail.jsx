@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp, ThemeToggle, Brand } from "../store.jsx";
 import { Ic, Tag, StatusDot, Empty } from "../ui.jsx";
-import { DB } from "../data.js";
+import { DB, fmtTraffic, fmtUptime } from "../data.js";
 import { ResourceChart, TrafficChart } from "../charts.jsx";
 import { getNodeDetail, getNodeHistory } from "../api.js";
 
@@ -92,7 +92,7 @@ export function NodeDetail({ id }) {
   const uptime = Math.round(node.uptime_days ?? 0);
   // 资源历史 → 图表所需结构
   const resData = hist.map((d) => ({ ts: d.ts, cpu: Math.round(d.cpu ?? 0), mem: Math.round(d.mem ?? 0), disk: Math.round(d.disk ?? 0) }));
-  const netData = hist.map((d) => ({ ts: d.ts, netIn: +(d.net_in ?? 0).toFixed(1), netOut: +(d.net_out ?? 0).toFixed(1) }));
+  const netData = hist.map((d) => ({ ts: d.ts, netIn: d.net_in ?? 0, netOut: d.net_out ?? 0 }));
 
   const cpu = Math.round(node.cpu ?? 0);
   const mem = Math.round(node.mem ?? 0);
@@ -117,7 +117,7 @@ export function NodeDetail({ id }) {
         <div className="row gap-24 wrap" style={{ marginTop: 14, fontSize: 13 }}>
           <span className="muted">IP <span className="mono" style={{ color: "var(--text)" }}>{ip}</span></span>
           <span className="muted">版本 <span className="mono" style={{ color: "var(--text)" }}>v{version}</span></span>
-          <span className="muted">在线时长 <span className="num" style={{ color: "var(--text)" }}>{online ? uptime + " 天" : "—"}</span></span>
+          <span className="muted">在线时长 <span className="num" style={{ color: "var(--text)" }}>{online ? fmtUptime(node.uptime_days) : "—"}</span></span>
         </div>
       </div>
 
@@ -131,8 +131,8 @@ export function NodeDetail({ id }) {
             <MiniStat label="内存使用率" value={mem} suffix="%" icon="activity" level={DB.usageLevel(mem)} />
             <MiniStat label="磁盘使用率" value={disk} suffix="%" icon="dashboard" level={DB.usageLevel(disk)} />
             <MiniStat label="系统负载" value={+(node.load ?? 0).toFixed(2)} icon="signal" />
-            <MiniStat label="下行流量" value={netIn} suffix="MB/s" icon="arrowDown" tone="var(--green)" />
-            <MiniStat label="上行流量" value={netOut} suffix="MB/s" icon="arrowUp" tone="var(--primary)" />
+            <MiniStat label="下行流量" value={fmtTraffic(node.net_in)} icon="arrowDown" tone="var(--green)" />
+            <MiniStat label="上行流量" value={fmtTraffic(node.net_out)} icon="arrowUp" tone="var(--primary)" />
           </div>
 
           {/* 资源历史 */}

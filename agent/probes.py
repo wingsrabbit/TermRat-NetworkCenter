@@ -7,11 +7,16 @@
 
 import socket
 import time
+import warnings
 
 import httpx
 import dns.resolver
 import dns.message
 from icmplib import ping
+
+# probe_http 用 verify=False（只测延迟/可达性，不做证书校验）。
+# 屏蔽 httpx/urllib3 等对未验证 HTTPS 的告警，避免刷屏。
+warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 
 def _blank_result() -> dict:
@@ -160,9 +165,12 @@ def probe_http(target: str, timeout: float) -> dict:
             print(f"[probe_http] dns for {host} error: {e}")
 
         # —— 发请求并通过 trace 抓阶段耗时 ——
+        # verify=False：这是延迟/可达性探测而非证书审计，需放行内网自签 HTTPS；
+        # 外网 HTTPS 同样能正常测到延迟与状态码。
         with httpx.Client(
             timeout=timeout,
             follow_redirects=True,
+            verify=False,
         ) as client:
             req_start = time.perf_counter()
             resp = client.get(target, extensions={"trace": trace})

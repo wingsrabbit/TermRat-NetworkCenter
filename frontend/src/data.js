@@ -16,6 +16,31 @@ function usageLevel(pct) {
   return "red";
 }
 
+// —— 显示格式化 —— //
+/** 延迟：最多 2 位小数（去尾零）。null → "—" */
+export function fmtLatency(ms) {
+  if (ms == null || ms === "") return "—";
+  const n = Number(ms);
+  if (!isFinite(n)) return "—";
+  return String(+n.toFixed(2));
+}
+/** 流量：入参 MB/s，按量级自适应 MB/s · KB/s · B/s */
+export function fmtTraffic(mbps) {
+  const v = Number(mbps) || 0;
+  if (v >= 1) return v.toFixed(2) + " MB/s";
+  const kb = v * 1024;
+  if (kb >= 1) return kb.toFixed(1) + " KB/s";
+  return Math.round(v * 1024 * 1024) + " B/s";
+}
+/** 在线时长：入参为天（float），自适应 天 · 小时 · 分钟 */
+export function fmtUptime(days) {
+  const d = Number(days) || 0;
+  if (d >= 1) return Math.floor(d) + " 天";
+  const h = d * 24;
+  if (h >= 1) return Math.floor(h) + " 小时";
+  return Math.max(0, Math.round(d * 1440)) + " 分钟";
+}
+
 // —— 生成一段带噪声的 sparkline 序列 —— //
 function series(base, jitter, n, spike) {
   const out = [];
