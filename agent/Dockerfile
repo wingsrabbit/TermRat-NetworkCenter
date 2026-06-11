@@ -11,7 +11,7 @@ COPY agent/requirements.txt .
 RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
 # 再拷贝 agent 代码 + 版本号文件
-COPY agent/probes.py agent/resources.py agent/main.py ./
+COPY agent/probes.py agent/resources.py agent/main.py agent/testserver.py ./
 COPY VERSION ./VERSION
 
 CMD ["python", "main.py"]

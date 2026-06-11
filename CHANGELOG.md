@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [0.81] - 2026-06-11
+### 修复
+- **agent 容器崩溃**：agent/Dockerfile 漏拷 v0.8 新增的 `testserver.py`，导致 `import testserver` 失败、容器重启循环。补入 COPY。
+
 ## [0.8] - 2026-06-11
 ### 新增
 - **agent 内置测试服务**：每个 agent 起 HTTP(:8799)/HTTPS(:8443 自签)/UDP echo(:8799) 监听，使节点间可互测 HTTP/HTTPS/UDP（不止 ICMP/TCP）。
