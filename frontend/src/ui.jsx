@@ -2,6 +2,7 @@
    ONC — 共享 UI 原语 + 图标（ESM）
    ============================================================ */
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
+import { createPortal } from "react-dom";
 import { DB, fmtLatency } from "./data.js";
 
 /* ---------------- 图标（线性，24 viewBox 统一 stroke） ---------------- */
@@ -142,7 +143,9 @@ export function Modal({ title, onClose, children, footer, wide }) {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [onClose]);
-  return (
+  // Portal 到 body：弹窗用 position:fixed 居中，若被带 transform 的祖先（如 .fade-up
+  // 入场动画）包裹，会被劫持成相对该祖先定位而非视口 → 错位。挂到 body 彻底规避。
+  return createPortal(
     <React.Fragment>
       <div className="overlay" onClick={onClose} />
       <div className={"modal" + (wide ? " wide" : "")} role="dialog" aria-modal="true">
@@ -153,13 +156,15 @@ export function Modal({ title, onClose, children, footer, wide }) {
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
-    </React.Fragment>
+    </React.Fragment>,
+    document.body
   );
 }
 
 /* —— 抽屉 —— */
 export function Drawer({ title, onClose, children }) {
-  return (
+  // 同 Modal：Portal 到 body，避免被 transform 祖先劫持 fixed 定位。
+  return createPortal(
     <React.Fragment>
       <div className="overlay" onClick={onClose} />
       <div className="drawer" role="dialog" aria-modal="true">
@@ -169,7 +174,8 @@ export function Drawer({ title, onClose, children }) {
         </div>
         <div className="drawer-body">{children}</div>
       </div>
-    </React.Fragment>
+    </React.Fragment>,
+    document.body
   );
 }
 
