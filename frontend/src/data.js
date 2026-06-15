@@ -241,6 +241,6 @@ function probeHistory(task) {
 export const DB = {
   nodes, tasks, alertHistory, channels, users, incidents, kpi, sourceLabels,
   latencyLevel, usageLevel, detailSeries, nodeHistory, probeHistory,
-  site: { title: "ONC 网络状态中心", subtitle: "实时服务器资源监控 · 网络质量探测" },
+  site: { title: "网络状态中心", subtitle: "实时服务器资源监控 · 网络质量探测" },
   protoColors: { ICMP: "blue", TCP: "green", UDP: "amber", HTTP: "blue", DNS: "green" },
 };

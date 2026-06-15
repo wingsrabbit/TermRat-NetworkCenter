@@ -60,7 +60,7 @@ class _OkHandler(BaseHTTPRequestHandler):
 def _make_self_signed_pem():
     """现场生成 RSA 私钥 + 自签 x509 证书，返回 (key_pem, cert_pem) 两段 bytes。
 
-    用 cryptography 库；CN=onc-agent，有效期约 10 年。失败时抛异常由调用方处理。
+    用 cryptography 库；CN=nc-agent，有效期约 10 年。失败时抛异常由调用方处理。
     """
     # 延迟导入：即使没装 cryptography，也只影响 HTTPS，不影响 HTTP/UDP
     from cryptography import x509
@@ -69,7 +69,7 @@ def _make_self_signed_pem():
     from cryptography.x509.oid import NameOID
 
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "onc-agent")])
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "nc-agent")])
     now = datetime.now(timezone.utc)
     cert = (
         x509.CertificateBuilder()

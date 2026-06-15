@@ -15,7 +15,7 @@ case "$_loc" in zh*|*zh_CN*|*zh*) NC_LANG=zh ;; *) NC_LANG=en ;; esac
 L() { [ "$NC_LANG" = zh ] && printf '%s' "$1" || printf '%s' "$2"; }
 
 REPO="${TNC_REPO:-https://github.com/wingsrabbit/ONC.git}"
-DIR="${TNC_DIR:-/opt/nc-center/src}"
+DIR="${TNC_DIR:-/opt/onc/src}"
 IMAGE="nc-agent:latest"
 NAME="nc-agent"
 SERVER=""

@@ -7,7 +7,7 @@
 # Usage / 用法:
 #   curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/uninstall.sh | sudo bash
 # Options / 选项 (… | sudo bash -s -- --purge-docker):
-#   --keep-data      keep /opt/nc-center/data  保留数据/证书
+#   --keep-data      keep /opt/onc/data  保留数据/证书
 #   --purge-docker   also uninstall Docker      连 Docker 一并卸载
 # ============================================================
 set -eu
@@ -28,13 +28,13 @@ for a in "$@"; do
 done
 say() { printf '\033[1;36m[NC]\033[0m %s\n' "$*"; }
 
-DIR="${TNC_DIR:-/opt/nc-center}"
+DIR="${TNC_DIR:-/opt/onc}"
 
 if command -v docker >/dev/null 2>&1; then
   say "$(L '停止并删除容器：nc-center / nc-agent ...' 'Removing containers: nc-center / nc-agent ...')"
   docker rm -f nc-center nc-agent >/dev/null 2>&1 || true
-  say "$(L '删除本程序镜像（nc-center*）...' 'Removing program images (nc-center*) ...')"
-  IMGS="$(docker images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -E '^nc-center' || true)"
+  say "$(L '删除本程序镜像（nc-center / nc-agent）...' 'Removing program images (nc-center / nc-agent) ...')"
+  IMGS="$(docker images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -E '^(nc-center|nc-agent):' || true)"
   [ -n "$IMGS" ] && docker rmi -f $IMGS >/dev/null 2>&1 || true
 else
   say "$(L '未检测到 Docker，跳过容器 / 镜像清理。' 'Docker not found; skipping container/image cleanup.')"

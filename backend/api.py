@@ -220,6 +220,19 @@ def version_info():
     })
 
 
+# ----------------------------- 品牌（公开）-----------------------------
+@api_bp.get("/branding")
+def branding():
+    """公开品牌信息（名称 / 副标题 / 字母标 / Logo 图片），供登录 / 安装向导 / 公开页在任意登录状态下取用。"""
+    s = db.get_settings()
+    return jsonify({
+        "name": s.get("site_title") or "网络状态中心",
+        "subtitle": s.get("site_subtitle") or "",
+        "mark": s.get("brand_mark") or "NC",
+        "logo": s.get("brand_logo") or "",
+    })
+
+
 # ----------------------------- 公开 -----------------------------
 @api_bp.get("/public/overview")
 def public_overview():
@@ -235,7 +248,7 @@ def public_overview():
         for t in data["tasks"]:
             t["target_address"] = _mask_addr(t.get("target_address"), hmap)
     data["nodes"] = [_public_node(n) for n in data["nodes"]]
-    data["site"] = {k: db.get_settings().get(k) for k in ("site_title", "site_subtitle")}
+    data["site"] = {k: db.get_settings().get(k) for k in ("site_title", "site_subtitle", "brand_mark", "brand_logo")}
     return jsonify(data)
 
 
