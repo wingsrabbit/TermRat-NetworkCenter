@@ -3,7 +3,7 @@
    ============================================================ */
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { Ic } from "./ui.jsx";
-import { apiLogin, apiLogout, apiMe, getToken, setToken } from "./api.js";
+import { apiLogin, apiLogout, apiMe, apiSetup, getToken, setToken } from "./api.js";
 
 const AppCtx = createContext(null);
 export function useApp() { return useContext(AppCtx); }
@@ -61,6 +61,11 @@ export function AppProvider({ children }) {
     const user = await apiLogin(username, password); // 失败抛出
     return applyAuth(user);
   };
+  /** 初次安装：创建首个管理员并直接登录。 */
+  const setup = async (payload) => {
+    const user = await apiSetup(payload); // 失败抛出
+    return applyAuth(user);
+  };
   const logout = () => {
     apiLogout();            // best-effort 通知后端 + 清 token
     setAuth(null); persistAuth(null);
@@ -108,7 +113,7 @@ export function AppProvider({ children }) {
 
   const ctx = {
     route, navigate, theme, toggleTheme,
-    auth, login, logout, isAdmin,
+    auth, login, setup, logout, isAdmin,
     tick, secondsAgo, clock,
   };
   return <AppCtx.Provider value={ctx}>{children}</AppCtx.Provider>;

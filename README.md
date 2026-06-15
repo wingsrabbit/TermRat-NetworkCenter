@@ -97,11 +97,11 @@ curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/m
 完成后会输出访问地址：
 
 - 公开页：`http://你的IP`
-- 管理端：`http://你的IP/termadmin` （默认 **admin / admin** —— ⚠️ 请登录后立即修改）
+- 管理端：`http://你的IP/termadmin` —— **首次打开进入「初次安装向导」**，设置管理员用户名 / 密码 + 站点信息后即可使用
 - Agent 口：`http://你的IP:8080`（从机用此地址上报）
 
-> 自定义端口 / 账号：在命令里加环境变量，例如
-> `curl -fsSL .../install-center.sh | sudo TNC_HTTP_PORT=8000 TNC_ADMIN_PASS=改我 bash`
+> 自定义端口：在命令里加环境变量，例如 `… | sudo TNC_HTTP_PORT=8000 bash`。
+> 无人值守（跳过向导、直接预置管理员）：再加 `TNC_ADMIN_USER=…  TNC_ADMIN_PASS=…`。
 
 ---
 
@@ -205,11 +205,11 @@ docker restart nc-center      # 重启中心
 git clone https://github.com/wingsrabbit/TermRat-NetworkCenter.git
 cd TermRat-NetworkCenter
 
-# 1) 中心
+# 1) 中心（首次打开 /termadmin 进入安装向导设置管理员；
+#    无人值守可加 -e INITIAL_ADMIN_USER=… -e INITIAL_ADMIN_PASSWORD=… 跳过向导）
 docker build -t termrat-nc:latest .
 docker run -d --name nc-center --restart unless-stopped \
   -p 80:80 -p 443:443 -p 8080:8080 \
-  -e INITIAL_ADMIN_USER=admin -e INITIAL_ADMIN_PASSWORD=admin \
   -v /opt/termrat-nc/data:/app/data termrat-nc:latest
 
 # 2) agent（在每台被监控机；用根上下文 + -f agent/Dockerfile 以拷入 VERSION）
