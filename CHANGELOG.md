@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [0.921] - 2026-06-15
+### 变更
+- **去除 origin 兔子品牌**：项目源自 ServerStatus-Rabbit / NetworkStatus-Rabbit（均🐇吉祥物），适配时把兔子图标带进了 TermRat（Term + **Rat**，本不该用兔）。品牌标志改为简洁的 **TR 字母标**：替换 `store.jsx`(Brand) 与 `AdminShell.jsx`(侧栏 logo×2) 共 3 处用法、删除 `ui.jsx` 的 `rabbit` 图标定义、去掉 README 标题的 🐇。
+- README 架构说明弱化对 origin 技术栈的指名（InfluxDB → 「独立时序库」）。
+### 检查
+- 全项目复检确认**无其它 origin 残留**：前端依赖仅 react/vite/echarts（无 vue/naive/pinia/socket.io/semantic）；无 ServerStatus/NetworkStatus/Hotaru/SocketIO 等代码或文案。（`wingsrabbit` 为仓库属主用户名，非污染。）
+
 ## [0.92] - 2026-06-15
 ### 新增
 - **初次安装向导**：全新部署（库内尚无用户）首次打开 `/termadmin` 自动进入安装向导，设置**管理员用户名 / 密码**（密码≥8 位、需确认）+ 站点标题 / 副标题，提交后创建管理员并直接登录进入仪表盘。

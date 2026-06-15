@@ -135,7 +135,7 @@ export function ThemeToggle() {
   );
 }
 
-/* —— 品牌标志（小方块 + 兔子图标 + 文字） —— */
+/* —— 品牌标志（小方块 + TR 字母标 + 文字） —— */
 export function Brand({ compact, white }) {
   return (
     <div className="row gap-8" style={{ alignItems: "center" }}>
@@ -144,7 +144,7 @@ export function Brand({ compact, white }) {
         display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none",
         boxShadow: white ? "none" : "0 2px 6px rgba(47,111,237,0.35)",
       }}>
-        <Ic name="rabbit" size={18} sw={1.7} />
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "-0.04em" }}>TR</span>
       </div>
       {!compact && <span style={{ fontWeight: 660, fontSize: 15.5, letterSpacing: "-0.01em" }}>TermRat <span style={{ color: "var(--text-3)", fontWeight: 500 }}>网络状态中心</span></span>}
     </div>

@@ -1,4 +1,4 @@
-# TermRat-NetworkCenter (NC) 🐇
+# TermRat-NetworkCenter (NC)
 
 > **服务器资源 + 网络质量** 统一状态中心 —— 一个公开状态页 + 一个 WHMCS 风管理后台。
 > 中心端 **单 Docker** 即可跑（内置 Caddy 自动 HTTPS），被监控机各跑一个轻量 agent。
@@ -68,7 +68,7 @@
         └──── 互相探测 ICMP/TCP/UDP/HTTP/HTTPS ────┘   +   对外目标 HTTP/DNS/UDP
 ```
 
-- **Center**：单 Docker 镜像（多阶段：Node 构建前端 → Python 运行 + 内嵌 Caddy）。`supervisord` 同容器拉起 `gunicorn`（应用，8080）与 `caddy`（web，80/443，反代到 8080）。存储用 **SQLite**，不依赖 InfluxDB / 外置 nginx / WebSocket。
+- **Center**：单 Docker 镜像（多阶段：Node 构建前端 → Python 运行 + 内嵌 Caddy）。`supervisord` 同容器拉起 `gunicorn`（应用，8080）与 `caddy`（web，80/443，反代到 8080）。存储用 **SQLite**，架构精简（无需独立时序库 / 外置 nginx / WebSocket）。
 - **Agent**：装在每台被监控机，周期性拉任务 → 执行探测 + 采资源 → HTTP POST 上报。内置测试服务（HTTP/HTTPS/UDP echo），使节点间可互测应用层协议。
 
 ---
