@@ -1,13 +1,15 @@
 /* ============================================================
    TermRat — 应用根 + 路由（公开页 + 管理端 /termadmin）
    ============================================================ */
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./store.jsx";
 import { ToastProvider, Ic } from "./ui.jsx";
+import { apiSetupStatus } from "./api.js";
 import { PublicHome } from "./pages/PublicHome.jsx";
 import { NodeDetail } from "./pages/NodeDetail.jsx";
 import { ProbeDetail } from "./pages/ProbeDetail.jsx";
 import { Login } from "./pages/admin/Login.jsx";
+import { Setup } from "./pages/admin/Setup.jsx";
 import { AdminShell } from "./pages/admin/AdminShell.jsx";
 import { Dashboard } from "./pages/admin/Dashboard.jsx";
 import { TaskDetail } from "./pages/admin/TaskDetail.jsx";
@@ -41,10 +43,29 @@ function NoAccess() {
   );
 }
 
+// 未登录入口：先看是否需要初次安装（库内无用户）→ 安装向导 / 否则登录页
+function AdminEntry() {
+  const [state, setState] = useState("loading"); // loading | setup | login
+  useEffect(() => {
+    let alive = true;
+    apiSetupStatus()
+      .then((d) => { if (alive) setState(d && d.needs_setup ? "setup" : "login"); })
+      .catch(() => { if (alive) setState("login"); });
+    return () => { alive = false; };
+  }, []);
+  if (state === "setup") return <Setup />;
+  if (state === "login") return <Login />;
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--panel)" }}>
+      <Ic name="refresh" size={22} className="spin" style={{ color: "var(--text-3)" }} />
+    </div>
+  );
+}
+
 function AdminRouter({ parts }) {
   const { auth, isAdmin } = useApp();
-  // 登录页（/termadmin）或未登录 → 登录
-  if (parts.length === 1 || !auth) return <Login />;
+  // 登录页（/termadmin）或未登录 → 安装向导 / 登录
+  if (parts.length === 1 || !auth) return <AdminEntry />;
 
   const sub = parts[1];
   let page = null;

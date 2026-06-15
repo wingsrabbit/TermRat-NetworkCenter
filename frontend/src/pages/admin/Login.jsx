@@ -10,7 +10,7 @@ const REMEMBER_KEY = "termrat-remember-user";
 export function Login() {
   const { login, navigate, auth } = useApp();
   const [name, setName] = useState(() => {
-    try { return localStorage.getItem(REMEMBER_KEY) || "admin"; } catch (e) { return "admin"; }
+    try { return localStorage.getItem(REMEMBER_KEY) || ""; } catch (e) { return ""; }
   });
   const [pwd, setPwd] = useState("");
   const [show, setShow] = useState(false);
@@ -79,9 +79,6 @@ export function Login() {
             {loading ? <Ic name="refresh" size={16} className="spin" /> : null}
             {loading ? "登录中…" : "登录"}
           </button>
-          <div className="faint" style={{ fontSize: 12, textAlign: "center", marginTop: 16, lineHeight: 1.6 }}>
-            默认账号：<span className="mono">admin</span> / <span className="mono">admin</span>（首次登录后请尽快修改）
-          </div>
         </form>
         <div style={{ textAlign: "center", marginTop: 18 }}>
           <button className="btn-link" onClick={() => navigate("/")}>

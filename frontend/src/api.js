@@ -147,6 +147,22 @@ export async function apiLogout() {
 }
 export function apiMe() { return request("GET", "/auth/me"); } // → {user}
 
+/* —— 初次安装向导 —— */
+export function apiSetupStatus() { return request("GET", "/setup/status"); } // → {needs_setup}
+export async function apiSetup(body) {
+  // 创建首个管理员并直接登录（仿 apiLogin：存 token，返回 user）
+  const r = await fetch("/api/setup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  let data = null;
+  try { data = await r.json(); } catch (e) { data = null; }
+  if (!r.ok) throw new Error((data && data.error) || "初始化失败");
+  setToken(data.token);
+  return data.user; // {username, role}
+}
+
 /* —— 节点 —— */
 export function apiListNodes() { return request("GET", "/nodes"); }                 // → {nodes}
 export function apiCreateNode(body) { return request("POST", "/nodes", body); }      // → {id,name,token}
