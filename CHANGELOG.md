@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [0.941] - 2026-06-15
+### 修复
+- **复制按钮在 HTTP 下无效**：`CodeBlock`（接入 Token / 部署命令等）的复制只用了 `navigator.clipboard`，而该 API 仅在 **HTTPS / localhost（安全上下文）** 可用；纯 HTTP（如 `http://IP`）下 `navigator.clipboard` 为 undefined → 短路啥也没干，却仍弹「已复制」假成功。改为 `copyToClipboard()`：安全上下文用 Clipboard API，否则**回退 `execCommand('copy')`**（HTTP 可用），且**真复制成功才提示**、失败提示「请手动选择复制」。
+
 ## [0.94] - 2026-06-15
 ### 新增
 - **一键卸载 `deploy/uninstall.sh`**：`curl … uninstall.sh | sudo bash` 移除 `nc-center` / `nc-agent` 容器 + `nc-center*` 镜像 + 安装目录 `/opt/nc-center`（含数据）。**只删本程序自己的容器/镜像，不碰机器上其它 Docker 容器**；默认**保留 Docker**（生产机可能他用）。选项 `--keep-data`（保留数据/证书）、`--purge-docker`（连 Docker 卸，动态 dpkg 查包名）。

@@ -214,12 +214,38 @@ export function ToastProvider({ children }) {
 }
 export function useToast() { return useContext(ToastCtx) || { success() {}, error() {}, info() {} }; }
 
+/* —— 复制到剪贴板：安全上下文用 Clipboard API；HTTP/非安全上下文回退 execCommand —— */
+export function copyToClipboard(text) {
+  const s = String(text);
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(s);
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = s;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "-9999px";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, s.length);
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      ok ? resolve() : reject(new Error("execCommand copy failed"));
+    } catch (e) { reject(e); }
+  });
+}
+
 /* —— 代码块（带复制） —— */
 export function CodeBlock({ children }) {
   const toast = useToast();
   const copy = () => {
-    navigator.clipboard && navigator.clipboard.writeText(children);
-    toast.success("已复制到剪贴板");
+    copyToClipboard(children)
+      .then(() => toast.success("已复制到剪贴板"))
+      .catch(() => toast.error("复制失败，请手动选择文本复制"));
   };
   return (
     <div className="code">
