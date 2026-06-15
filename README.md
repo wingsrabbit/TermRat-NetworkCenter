@@ -198,6 +198,15 @@ docker logs -f nc-agent       # 节点 agent 日志
 docker restart nc-center      # 重启中心
 ```
 
+**一键卸载**（中心或探针通用，只删本程序、不动机器上其它 Docker 容器、默认保留 Docker）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/uninstall.sh | sudo bash
+```
+
+> 移除 `nc-center` / `nc-agent` 容器 + `termrat-nc*` 镜像 + 安装目录 `/opt/termrat-nc`（含数据）。
+> 选项：`--keep-data`（保留数据/证书）；`--purge-docker`（连 Docker 一并卸，⚠ 仅当 Docker 专为本程序所装）。例：`… | sudo bash -s -- --keep-data`。
+
 ---
 
 ## 从源码手动构建

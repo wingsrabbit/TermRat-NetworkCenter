@@ -36,6 +36,7 @@ if [ -z "$SERVER" ] || [ -z "$TOKEN" ]; then
   exit 1
 fi
 
+say "▶ 部署【探针 agent】——上报至 $SERVER（这是被监控机；中心 master 请用 install-center.sh）"
 say "1/4 检查 Docker ..."
 if ! command -v docker >/dev/null 2>&1; then
   say "    未检测到 Docker，自动安装中（get.docker.com）..."

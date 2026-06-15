@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [0.94] - 2026-06-15
+### 新增
+- **一键卸载 `deploy/uninstall.sh`**：`curl … uninstall.sh | sudo bash` 移除 `nc-center` / `nc-agent` 容器 + `termrat-nc*` 镜像 + 安装目录 `/opt/termrat-nc`（含数据）。**只删本程序自己的容器/镜像，不碰机器上其它 Docker 容器**；默认**保留 Docker**（生产机可能他用）。选项 `--keep-data`（保留数据/证书）、`--purge-docker`（连 Docker 卸，动态 dpkg 查包名）。
+### 变更
+- **安装脚本加醒目角色标注**：`install-center.sh` 开头打印「▶ 部署【中心 master】…要装探针请用 install-agent.sh」、`install-agent.sh` 打印「▶ 部署【探针 agent】…」，避免把中心 / 探针两条相似的 `curl|bash` 命令搞混（误把中心装到被监控机上）。
+- README 增「一键卸载」说明。
+
 ## [0.93] - 2026-06-15
 ### 新增
 - **左上角版本标 + 是否最新**：管理后台侧栏品牌下显示当前运行版本 `vX`，并与 **GitHub main 的 VERSION** 对比——**绿「· 最新」/ 橙「· 有新版 vY」**（鼠标悬停提示更新方式）。后端新增公开 `GET /api/version`（返回 `running` / `latest` / `up_to_date`，latest 从 GitHub 拉取并缓存 30 分钟）。

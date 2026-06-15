@@ -27,6 +27,7 @@ ADMIN_PASS="${TNC_ADMIN_PASS:-}"
 
 say() { printf '\033[1;36m[NC]\033[0m %s\n' "$*"; }
 
+say "▶ 部署【中心 master】——若要在被监控机上装【探针 agent】，请改用 install-agent.sh"
 say "1/4 检查 Docker ..."
 if ! command -v docker >/dev/null 2>&1; then
   say "    未检测到 Docker，自动安装中（get.docker.com）..."
