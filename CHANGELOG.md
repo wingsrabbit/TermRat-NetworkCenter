@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+## [0.97] - 2026-06-15
+### 修复
+- **探针(agent)无法用 `update.sh` 更新**：`update.sh` 整套逻辑只为中心写死（`nc-center`、拉前端、`docker cp`、查 `/api/health`），在探针机上执行直接 `Container nc-center not found` 退出。改为**自动识别本机角色**并分别处理：
+  - 中心 `nc-center` → 原热替换流程（重建前端 + `docker cp` + 重启，数据/配置不动）。
+  - 探针 `nc-agent` → 重建 `nc-agent:latest` 镜像，并**从运行中的容器读回原配置**（`NC_SERVER` / `NC_TOKEN` / 三个测试端口）按原样重启，约 10s 回到在线。
+  - 同机两个都装就都更新；一个都没有才报错并提示对应 install 脚本。
+- README「更新与维护」改为「中心 / 探针通用，同一条命令」，删除旧的「agent 升级＝重跑安装命令」表述（正是它误导成在 agent 上跑 update 报错）。
+
 ## [0.961] - 2026-06-15
 ### 修复
 - **弹窗内容过高时标题被裁**：`.modal` 有 `max-height` 但 `.modal-body` 缺 `min-height: 0`（flexbox 经典坑）——内容一高、body 无法收缩滚动，整个弹窗超出 `max-height`，垂直居中后**顶部 head（标题 + 首个字段标签）被挤出视口裁掉**（如短视口下「添加任务」弹窗看不到标题与「任务名称」标签）。给 `.modal-body` 加 `flex: 1 1 auto; min-height: 0`、head/foot 加 `flex: none`：body 内部滚动、head/foot 始终可见。影响所有共享 Modal 的弹窗。
