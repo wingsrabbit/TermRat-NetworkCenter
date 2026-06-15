@@ -179,11 +179,14 @@ data/
 
 ## 更新与维护
 
-**中心升级**（重新拉取 + 构建 + 重启，数据保留）：
+**更新中心（真·更新，非重装）** —— 拉取最新代码、仅重建前端并**热替换**进运行中的容器，不重建整镜像、**数据与配置保留**：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install-center.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/update.sh | sudo bash
 ```
+
+> 管理后台**左上角显示当前版本**并与 GitHub 最新版对比（绿 = 最新 / 橙 = 有新版），一眼看出是否需要更新。
+> 若某次更新涉及无法热装的底层变更（脚本会提示），或想彻底重建镜像，再用 `install-center.sh` 重跑一次。
 
 **agent 升级**：在节点上重跑一键 agent 安装命令即可。
 

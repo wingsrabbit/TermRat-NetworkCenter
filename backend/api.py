@@ -8,6 +8,8 @@
 """
 import hmac
 import os
+import time
+import urllib.request
 from functools import wraps
 
 from flask import Blueprint, g, jsonify, request
@@ -16,6 +18,37 @@ import db
 import webserver
 
 api_bp = Blueprint("api", __name__)
+
+# 版本：运行版本读 /app/VERSION；最新版本从 GitHub main 的 VERSION 拉取（带缓存）
+_VERSION_LATEST_URL = "https://raw.githubusercontent.com/wingsrabbit/ONC/main/VERSION"
+_latest_cache = {"v": None, "ts": 0.0}
+
+
+def _running_version():
+    here = os.path.dirname(os.path.abspath(__file__))
+    for p in (os.path.join(here, "VERSION"), os.path.join(here, "..", "VERSION")):
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except OSError:
+            continue
+    return "0.0.0"
+
+
+def _latest_version():
+    now = time.time()
+    if _latest_cache["v"] and now - _latest_cache["ts"] < 1800:  # 30 分钟缓存
+        return _latest_cache["v"]
+    try:
+        req = urllib.request.Request(_VERSION_LATEST_URL, headers={"User-Agent": "ONC"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            v = r.read().decode("utf-8").strip()
+        if v:
+            _latest_cache["v"] = v
+            _latest_cache["ts"] = now
+    except Exception:
+        pass  # 拉取失败：返回旧缓存或 None，前端只展示运行版本
+    return _latest_cache["v"]
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 REPORT_INTERVAL = int(os.environ.get("REPORT_INTERVAL", "10"))
 PROTOCOLS = ("icmp", "tcp", "udp", "http", "dns")
@@ -172,6 +205,19 @@ def setup_init():
     uid = db.create_user(username, password, role="admin", created_by="setup")
     token = db.create_session(uid)
     return jsonify({"token": token, "user": {"username": username, "role": "admin"}})
+
+
+# ----------------------------- 版本 -----------------------------
+@api_bp.get("/version")
+def version_info():
+    """运行版本 + GitHub 最新版本（供前端显示「是否最新」）。"""
+    running = _running_version()
+    latest = _latest_version()
+    return jsonify({
+        "running": running,
+        "latest": latest,
+        "up_to_date": (latest is not None and latest == running),
+    })
 
 
 # ----------------------------- 公开 -----------------------------

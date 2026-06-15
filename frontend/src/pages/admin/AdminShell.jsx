@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp, ThemeToggle } from "../../store.jsx";
 import { Ic, useClickOutside } from "../../ui.jsx";
+import { apiVersion } from "../../api.js";
 
 /* ---------------- 菜单定义 ---------------- */
 export const MENU = [
@@ -20,6 +21,27 @@ export function activeKeyFromPath(p) {
   if (p.startsWith("/admin/alerts/history")) return "history";
   const m = MENU.slice().reverse().find((x) => p.startsWith(x.path));
   return m ? m.key : "dashboard";
+}
+
+/* 版本标：运行版本 + 与 GitHub 最新对比（最新=绿/有新版=橙） */
+function VersionBadge() {
+  const [v, setV] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    apiVersion().then((d) => { if (alive) setV(d); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  if (!v || !v.running) return null;
+  const behind = v.latest && v.latest !== v.running;
+  return (
+    <span style={{ fontSize: 11, marginTop: 1, whiteSpace: "nowrap" }}
+      title={behind ? `有新版本 v${v.latest}，在中心服务器执行 update.sh 即可更新` : (v.latest ? "已是最新版本" : "")}>
+      <span className="mono" style={{ color: "var(--text-3)" }}>v{v.running}</span>
+      {v.latest && (behind
+        ? <span style={{ color: "#e0901b", fontWeight: 600 }}> · 有新版 v{v.latest}</span>
+        : <span style={{ color: "var(--green)" }}> · 最新</span>)}
+    </span>
+  );
 }
 
 export function AdminShell({ children }) {
@@ -48,7 +70,10 @@ export function AdminShell({ children }) {
           ? <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "-0.04em" }}>TR</span></div>
           : <div className="row gap-8" style={{ overflow: "hidden", whiteSpace: "nowrap" }}>
               <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "-0.04em" }}>TR</span></div>
-              <span style={{ fontWeight: 660, fontSize: 14.5 }}>ONC <span className="faint" style={{ fontWeight: 500, fontSize: 12 }}>网络状态中心</span></span>
+              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2, overflow: "hidden" }}>
+                <span style={{ fontWeight: 660, fontSize: 14.5 }}>ONC <span className="faint" style={{ fontWeight: 500, fontSize: 12 }}>网络状态中心</span></span>
+                <VersionBadge />
+              </div>
             </div>}
       </div>
 

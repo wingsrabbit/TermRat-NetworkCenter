@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [0.93] - 2026-06-15
+### 新增
+- **左上角版本标 + 是否最新**：管理后台侧栏品牌下显示当前运行版本 `vX`，并与 **GitHub main 的 VERSION** 对比——**绿「· 最新」/ 橙「· 有新版 vY」**（鼠标悬停提示更新方式）。后端新增公开 `GET /api/version`（返回 `running` / `latest` / `up_to_date`，latest 从 GitHub 拉取并缓存 30 分钟）。
+- **真·更新脚本 `deploy/update.sh`（非重装）**：`git pull` 最新 → 临时 node 容器仅重建前端 → `docker cp` 热替换进运行中的 center 容器 + `pip install` 校验后端依赖 → 重启容器。**不重建整镜像（不重拉基础层）、数据卷不动**；版本未变则直接跳过。一行命令：`curl … update.sh | sudo bash`。涉及底层变更时脚本提示改用 `install-center.sh`。
+### 变更
+- README「更新与维护」改为主推 `update.sh`（真·更新），`install-center.sh` 退为首装 / 彻底重建。
+
 ## [0.922] - 2026-06-15
 ### 修复
 - **节点「部署」弹窗改为一行命令安装**：原先给的是裸 `docker run nc-agent`，但全新探针机本地**没有该镜像**会直接失败；且 `NC_SERVER` 用 `location.origin`（web 80 口、漏了 agent 口）。现改为一行 `curl … install-agent.sh | sudo bash -s -- -s http://<host>:8080 -t <token>`（自动装 Docker / 拉源码 / 构建 / 运行），`NC_SERVER` 固定用中心 **agent 上报口 :8080**（与 web 端口解耦）。弹窗文案同步更新。
