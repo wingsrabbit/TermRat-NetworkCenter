@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [0.961] - 2026-06-15
+### 修复
+- **弹窗内容过高时标题被裁**：`.modal` 有 `max-height` 但 `.modal-body` 缺 `min-height: 0`（flexbox 经典坑）——内容一高、body 无法收缩滚动，整个弹窗超出 `max-height`，垂直居中后**顶部 head（标题 + 首个字段标签）被挤出视口裁掉**（如短视口下「添加任务」弹窗看不到标题与「任务名称」标签）。给 `.modal-body` 加 `flex: 1 1 auto; min-height: 0`、head/foot 加 `flex: none`：body 内部滚动、head/foot 始终可见。影响所有共享 Modal 的弹窗。
+
 ## [0.96] - 2026-06-15
 ### 变更（去品牌化 → 通用开源 NC）
 - **全面去除 ONC 指向性内容**，项目更名 **ONC（Open Network Center）**：仓库/安装/更新/版本检查 URL `ONC → ONC`；镜像名 `nc-center → nc-center`、`nc-agent → nc-agent`；安装目录 `/opt/nc-center → /opt/onc`；数据库 `nc.sqlite → nc.sqlite`（**带自动迁移**：旧库存在则首启改名、数据不丢，含 -wal/-shm）；前端 localStorage 键 `onc-* → onc-*`；告警 Webhook 文案、自签证书 CN、`/api/health` name、各代码注释统一 ONC。
