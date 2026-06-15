@@ -27,12 +27,11 @@ export function RowBtn({ icon, label, tone, onClick, disabled }) {
   );
 }
 
-/* —— Docker 部署命令片段（以当前站点 origin 作为 NC_SERVER） —— */
+/* —— 一键安装命令（curl|bash：自动装 Docker / 拉源码 / 构建 / 运行）。
+   NC_SERVER 用中心的 agent 上报口 :8080（与 web 端口解耦），主机名取当前访问地址。 —— */
 export function deploySnippet(token) {
-  const server = (typeof window !== "undefined" && window.location.origin) || "http://<server>:8080";
-  return `docker run -d --name nc-agent \\
-  --restart=always --net=host --cap-add=NET_RAW \\
-  -e NC_SERVER=${server} \\
-  -e NC_TOKEN=${token} \\
-  nc-agent`;
+  const host = (typeof window !== "undefined" && window.location.hostname) || "<中心IP或域名>";
+  const server = `http://${host}:8080`;
+  return `curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install-agent.sh \\
+  | sudo bash -s -- -s ${server} -t ${token}`;
 }

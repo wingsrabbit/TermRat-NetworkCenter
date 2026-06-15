@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [0.922] - 2026-06-15
+### 修复
+- **节点「部署」弹窗改为一行命令安装**：原先给的是裸 `docker run nc-agent`，但全新探针机本地**没有该镜像**会直接失败；且 `NC_SERVER` 用 `location.origin`（web 80 口、漏了 agent 口）。现改为一行 `curl … install-agent.sh | sudo bash -s -- -s http://<host>:8080 -t <token>`（自动装 Docker / 拉源码 / 构建 / 运行），`NC_SERVER` 固定用中心 **agent 上报口 :8080**（与 web 端口解耦）。弹窗文案同步更新。
+
 ## [0.921] - 2026-06-15
 ### 变更
 - **去除 origin 兔子品牌**：项目源自 ServerStatus-Rabbit / NetworkStatus-Rabbit（均🐇吉祥物），适配时把兔子图标带进了 ONC（Term + **Rat**，本不该用兔）。品牌标志改为简洁的 **TR 字母标**：替换 `store.jsx`(Brand) 与 `AdminShell.jsx`(侧栏 logo×2) 共 3 处用法、删除 `ui.jsx` 的 `rabbit` 图标定义、去掉 README 标题的 🐇。
