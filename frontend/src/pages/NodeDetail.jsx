@@ -12,7 +12,7 @@ const PROTO_COLORS = { ICMP: "blue", TCP: "green", UDP: "amber", HTTP: "blue", D
 
 /* —— 公开页通用外壳：顶栏 + 容器 + 页脚 —— */
 export function PublicShell({ children }) {
-  const { navigate } = useApp();
+  const { navigate, brand } = useApp();
   return (
     <div style={{ minHeight: "100%", background: "var(--bg)" }}>
       <header style={{ position: "sticky", top: 0, zIndex: 30, background: "color-mix(in srgb, var(--bg) 88%, transparent)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--border)" }}>
@@ -26,7 +26,7 @@ export function PublicShell({ children }) {
       </header>
       <div className="container" style={{ padding: "24px 24px 64px" }}>{children}</div>
       <footer style={{ borderTop: "1px solid var(--border)", background: "var(--panel-2)" }}>
-        <div className="container" style={{ padding: "20px 24px", fontSize: 12.5, color: "var(--text-3)" }}>© 2026 ONC 网络状态中心 · 数据每 10 秒刷新</div>
+        <div className="container" style={{ padding: "20px 24px", fontSize: 12.5, color: "var(--text-3)" }}>© 2026 {brand.name} · 数据每 10 秒刷新</div>
       </footer>
     </div>
   );

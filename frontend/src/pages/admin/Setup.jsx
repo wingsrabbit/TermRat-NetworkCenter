@@ -7,12 +7,12 @@ import { useApp, ThemeToggle, Brand } from "../../store.jsx";
 import { Ic } from "../../ui.jsx";
 
 export function Setup() {
-  const { setup, navigate } = useApp();
+  const { setup, navigate, brand } = useApp();
   const [name, setName] = useState("");
   const [pwd, setPwd] = useState("");
   const [pwd2, setPwd2] = useState("");
   const [show, setShow] = useState(false);
-  const [title, setTitle] = useState("ONC 网络状态中心");
+  const [title, setTitle] = useState("网络状态中心");
   const [subtitle, setSubtitle] = useState("实时服务器资源监控 · 网络质量探测");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,7 +50,7 @@ export function Setup() {
         <div style={{ textAlign: "center", marginBottom: 22 }}>
           <div style={{ display: "inline-flex", marginBottom: 14 }}><Brand compact /></div>
           <h1 className="h1" style={{ fontSize: 21 }}>初次安装</h1>
-          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>创建管理员账号，开始使用 ONC 网络状态中心</p>
+          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>创建管理员账号，开始使用 {brand.name}</p>
         </div>
 
         <form onSubmit={submit} className="card card-pad" style={{ padding: "24px 26px 22px" }}>

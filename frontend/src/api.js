@@ -150,6 +150,9 @@ export function apiMe() { return request("GET", "/auth/me"); } // → {user}
 /* —— 版本（运行 + GitHub 最新）—— */
 export function apiVersion() { return request("GET", "/version"); } // → {running, latest, up_to_date}
 
+/* —— 品牌（公开：名称 / 副标题 / 字母标 / Logo）—— */
+export function apiBranding() { return request("GET", "/branding"); } // → {name, subtitle, mark, logo}
+
 /* —— 初次安装向导 —— */
 export function apiSetupStatus() { return request("GET", "/setup/status"); } // → {needs_setup}
 export async function apiSetup(body) {

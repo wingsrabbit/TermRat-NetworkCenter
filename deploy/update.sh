@@ -5,7 +5,7 @@
 #   → install deps → restart. No full image rebuild; data volume untouched.
 # Usage / 用法 (run on the center host):
 #   curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/update.sh | sudo bash
-#   Optional: TNC_DIR=/opt/nc-center/src  TNC_NAME=nc-center
+#   Optional: TNC_DIR=/opt/onc/src  TNC_NAME=nc-center
 # ============================================================
 set -euo pipefail
 
@@ -14,7 +14,7 @@ _loc="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
 case "$_loc" in zh*|*zh_CN*|*zh*) NC_LANG=zh ;; *) NC_LANG=en ;; esac
 L() { [ "$NC_LANG" = zh ] && printf '%s' "$1" || printf '%s' "$2"; }
 
-DIR="${TNC_DIR:-/opt/nc-center/src}"
+DIR="${TNC_DIR:-/opt/onc/src}"
 NAME="${TNC_NAME:-nc-center}"
 say() { printf '\033[1;36m[NC]\033[0m %s\n' "$*"; }
 

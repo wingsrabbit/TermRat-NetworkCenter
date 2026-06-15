@@ -1,9 +1,19 @@
 # 更新日志 / Changelog
 
-本项目版本号**按操作规模递增**：大操作 +0.1、中型 +0.01、小型 +0.001（详见 README「开发规范」）。
+本项目版本号**按操作规模递增**：大操作 +0.1、中型 +0.01、小型 +0.001。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.96] - 2026-06-15
+### 变更（去品牌化 → 通用开源 NC）
+- **全面去除 ONC 指向性内容**，项目更名 **ONC（Open Network Center）**：仓库/安装/更新/版本检查 URL `ONC → ONC`；镜像名 `nc-center → nc-center`、`nc-agent → nc-agent`；安装目录 `/opt/nc-center → /opt/onc`；数据库 `nc.sqlite → nc.sqlite`（**带自动迁移**：旧库存在则首启改名、数据不丢，含 -wal/-shm）；前端 localStorage 键 `onc-* → onc-*`；告警 Webhook 文案、自签证书 CN、`/api/health` name、各代码注释统一 ONC。
+### 新增（品牌 / Logo 可自定义）
+- **管理端「系统设置 → 品牌 / 外观」**：可改**品牌名称**（显示在侧栏 / 登录 / 安装向导 / 公开页 / 浏览器标题）、**副标题**、**Logo 字母标**（1–3 字符），以及**上传自有 Logo 图片**（≤256KB，存为 data URL）。
+- 后端公开 `GET /api/branding`；新增 `brand_mark` / `brand_logo` 设置项，默认品牌名改为通用「网络状态中心」、默认字母标「NC」。
+- 前端品牌全部动态化：新增 `BrandMark` 组件（自定义图片 或 字母标），`Brand` / `AdminShell` / `Login` / `Setup` / 公开页页脚均读 `store.brand`。
+### 清理
+- README 去品牌（标题 ONC、去「WHMCS 风」指向）、**删除「开发规范」段**（含「缺什么装什么」等维护者内部流程，不应出现在公开产品 README）。
 
 ## [0.95] - 2026-06-15
 ### 新增
@@ -17,7 +27,7 @@
 
 ## [0.94] - 2026-06-15
 ### 新增
-- **一键卸载 `deploy/uninstall.sh`**：`curl … uninstall.sh | sudo bash` 移除 `nc-center` / `nc-agent` 容器 + `nc-center*` 镜像 + 安装目录 `/opt/nc-center`（含数据）。**只删本程序自己的容器/镜像，不碰机器上其它 Docker 容器**；默认**保留 Docker**（生产机可能他用）。选项 `--keep-data`（保留数据/证书）、`--purge-docker`（连 Docker 卸，动态 dpkg 查包名）。
+- **一键卸载 `deploy/uninstall.sh`**：`curl … uninstall.sh | sudo bash` 移除 `nc-center` / `nc-agent` 容器 + `nc-center*` 镜像 + 安装目录 `/opt/onc`（含数据）。**只删本程序自己的容器/镜像，不碰机器上其它 Docker 容器**；默认**保留 Docker**（生产机可能他用）。选项 `--keep-data`（保留数据/证书）、`--purge-docker`（连 Docker 卸，动态 dpkg 查包名）。
 ### 变更
 - **安装脚本加醒目角色标注**：`install-center.sh` 开头打印「▶ 部署【中心 master】…要装探针请用 install-agent.sh」、`install-agent.sh` 打印「▶ 部署【探针 agent】…」，避免把中心 / 探针两条相似的 `curl|bash` 命令搞混（误把中心装到被监控机上）。
 - README 增「一键卸载」说明。

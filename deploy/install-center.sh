@@ -7,7 +7,7 @@
 # Optional env / 可选环境变量:
 #   TNC_HTTP_PORT=80  TNC_HTTPS_PORT=443  TNC_AGENT_PORT=8080
 #   TNC_ADMIN_USER=...  TNC_ADMIN_PASS=...   (preset admin, skip wizard)
-#   TNC_DATA=/opt/nc-center/data  TNC_DIR=/opt/nc-center/src
+#   TNC_DATA=/opt/onc/data  TNC_DIR=/opt/onc/src
 #   TNC_REPO=https://github.com/wingsrabbit/ONC.git
 # ============================================================
 set -euo pipefail
@@ -18,8 +18,8 @@ case "$_loc" in zh*|*zh_CN*|*zh*) NC_LANG=zh ;; *) NC_LANG=en ;; esac
 L() { [ "$NC_LANG" = zh ] && printf '%s' "$1" || printf '%s' "$2"; }
 
 REPO="${TNC_REPO:-https://github.com/wingsrabbit/ONC.git}"
-DIR="${TNC_DIR:-/opt/nc-center/src}"
-DATA="${TNC_DATA:-/opt/nc-center/data}"
+DIR="${TNC_DIR:-/opt/onc/src}"
+DATA="${TNC_DATA:-/opt/onc/data}"
 IMAGE="nc-center:latest"
 NAME="nc-center"
 HTTP_PORT="${TNC_HTTP_PORT:-80}"

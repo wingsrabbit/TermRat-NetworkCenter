@@ -9,7 +9,7 @@ import { DB, fmtTraffic, fmtUptime, fmtNum } from "../data.js";   // 纯函数 u
 import { useOverview } from "../api.js";
 
 export function PublicHome() {
-  const { navigate, secondsAgo } = useApp();
+  const { navigate, secondsAgo, brand } = useApp();
   const { data: db, error } = useOverview();
   const [q, setQ] = useState("");
   const [region, setRegion] = useState("全部");
@@ -145,7 +145,7 @@ export function PublicHome() {
       {/* 页脚 + 最后更新 */}
       <footer style={{ borderTop: "1px solid var(--border)", background: "var(--panel-2)" }}>
         <div className="container row between wrap gap-12" style={{ padding: "20px 24px", fontSize: 12.5, color: "var(--text-3)" }}>
-          <span>© 2026 ONC 网络状态中心 · 数据每 10 秒刷新</span>
+          <span>© 2026 {brand.name} · 数据每 10 秒刷新</span>
           <span className="row gap-6"><span className="dot green" style={{ width: 6, height: 6 }} />最后更新：{secondsAgo} 秒前</span>
         </div>
       </footer>

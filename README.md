@@ -1,9 +1,9 @@
-# ONC (NC)
+# ONC · Open Network Center
 
-> **服务器资源 + 网络质量** 统一状态中心 —— 一个公开状态页 + 一个 WHMCS 风管理后台。
+> **服务器资源 + 网络质量** 统一状态中心 —— 一个公开状态页 + 一个管理后台；**品牌名称 / Logo 可自定义**，开箱即用。
 > 中心端 **单 Docker** 即可跑（内置 Caddy 自动 HTTPS），被监控机各跑一个轻量 agent。
 
-![version](https://img.shields.io/badge/version-v0.91-blue)
+![version](https://img.shields.io/badge/version-v0.96-blue)
 ![python](https://img.shields.io/badge/python-3.12-green)
 ![docker](https://img.shields.io/badge/docker-single--image-2496ED)
 ![license](https://img.shields.io/badge/license-MIT-orange)
@@ -25,7 +25,6 @@
 - [从源码手动构建](#从源码手动构建)
 - [目录结构](#目录结构)
 - [技术栈](#技术栈)
-- [开发规范](#开发规范)
 - [License](#license)
 
 ---
@@ -164,7 +163,7 @@ curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install
 
 ## 数据持久化
 
-中心所有状态在容器 `/app/data`（一键脚本挂到宿主 `/opt/nc-center/data`）：
+中心所有状态在容器 `/app/data`（一键脚本挂到宿主 `/opt/onc/data`）：
 
 ```
 data/
@@ -204,7 +203,7 @@ docker restart nc-center      # 重启中心
 curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/uninstall.sh | sudo bash
 ```
 
-> 移除 `nc-center` / `nc-agent` 容器 + `nc-center*` 镜像 + 安装目录 `/opt/nc-center`（含数据）。
+> 移除 `nc-center` / `nc-agent` 容器 + `nc-center` / `nc-agent` 镜像 + 安装目录 `/opt/onc`（含数据）。
 > 选项：`--keep-data`（保留数据/证书）；`--purge-docker`（连 Docker 一并卸，⚠ 仅当 Docker 专为本程序所装）。例：`… | sudo bash -s -- --keep-data`。
 
 ---
@@ -222,7 +221,7 @@ cd ONC
 docker build -t nc-center:latest .
 docker run -d --name nc-center --restart unless-stopped \
   -p 80:80 -p 443:443 -p 8080:8080 \
-  -v /opt/nc-center/data:/app/data nc-center:latest
+  -v /opt/onc/data:/app/data nc-center:latest
 
 # 2) agent（在每台被监控机；用根上下文 + -f agent/Dockerfile 以拷入 VERSION）
 docker build -f agent/Dockerfile -t nc-agent:latest .
@@ -277,14 +276,6 @@ ONC/
 | 采集 | psutil · icmplib · httpx · dnspython · cryptography |
 | 存储 | SQLite（WAL）|
 | 容器 | Docker 多阶段单镜像（node:20-slim + python:3.12-slim + caddy:2）|
-
----
-
-## 开发规范
-
-- 版本号按操作规模：**大 +0.1 / 中 +0.01 / 小 +0.001**（由 `VERSION` 维护，git tag 标记）。
-- 每个改动：**开分支 → 实现 → PR → 合并后打 tag → 写入 `CHANGELOG.md`**。
-- 缺什么装什么。
 
 ---
 

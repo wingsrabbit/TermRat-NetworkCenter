@@ -5,12 +5,15 @@
    ============================================================ */
 import React, { useState, useEffect } from "react";
 import { Ic, Tag, useToast } from "../../ui.jsx";
+import { useApp } from "../../store.jsx";
 import { PageHeader } from "./_common.jsx";
 import { apiGetSettings, apiPutSettings, apiGetWebConfig, apiSetWebConfig, apiSetWebCert } from "../../api.js";
 
 const DEFAULTS = {
-  site_title: "ONC 网络状态中心",
+  site_title: "网络状态中心",
   site_subtitle: "实时服务器资源监控 · 网络质量探测",
+  brand_mark: "NC",
+  brand_logo: "",
   data_retention_days: 3,
   global_alert_cooldown: 300,
   default_probe_interval: 5,
@@ -19,6 +22,7 @@ const DEFAULTS = {
 
 export function SettingsPage() {
   const toast = useToast();
+  const { refreshBrand } = useApp();
   const [f, setF] = useState(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -35,12 +39,24 @@ export function SettingsPage() {
 
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
 
+  const onLogoFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 256 * 1024) { toast.error("图片过大，请用 ≤256KB 的 PNG / SVG"); return; }
+    const reader = new FileReader();
+    reader.onload = () => set("brand_logo", reader.result);   // data URL（base64）
+    reader.readAsDataURL(file);
+  };
+
   const save = async () => {
     setBusy(true);
     try {
       const payload = {
         site_title: f.site_title,
         site_subtitle: f.site_subtitle,
+        brand_mark: (f.brand_mark || "NC").slice(0, 3),
+        brand_logo: f.brand_logo || "",
         data_retention_days: Number(f.data_retention_days),
         global_alert_cooldown: Number(f.global_alert_cooldown),
         default_probe_interval: Number(f.default_probe_interval),
@@ -48,6 +64,7 @@ export function SettingsPage() {
       };
       const d = await apiPutSettings(payload);
       setF({ ...DEFAULTS, ...(d.settings || payload) });
+      if (refreshBrand) refreshBrand();   // 即时刷新侧栏 / 标题等品牌显示
       toast.success("保存成功");
     } catch (e) {
       toast.error(e.message || "保存失败");
@@ -64,9 +81,19 @@ export function SettingsPage() {
     <div className="fade-up" style={{ maxWidth: 820 }}>
       <PageHeader title="系统设置" desc="站点、探测默认值与数据保留策略" />
       <div className="col gap-16">
-        <SettingsGroup title="站点信息" icon="globe">
-          <SField label="站点标题"><input className="input" value={f.site_title} onChange={(e) => set("site_title", e.target.value)} /></SField>
-          <SField label="站点副标题"><input className="input" value={f.site_subtitle} onChange={(e) => set("site_subtitle", e.target.value)} /></SField>
+        <SettingsGroup title="品牌 / 外观" icon="globe">
+          <SField label="品牌名称" hint="显示在侧栏 / 登录 / 公开页 / 浏览器标题"><input className="input" value={f.site_title} onChange={(e) => set("site_title", e.target.value)} /></SField>
+          <SField label="副标题"><input className="input" value={f.site_subtitle} onChange={(e) => set("site_subtitle", e.target.value)} /></SField>
+          <SField label="Logo 字母标" hint="无图片时显示，1–3 个字符"><input className="input" value={f.brand_mark} maxLength={3} onChange={(e) => set("brand_mark", e.target.value)} placeholder="NC" /></SField>
+          <SField label="Logo 图片" hint="留空用字母标；≤256KB 的 PNG / SVG">
+            <div className="row gap-10" style={{ alignItems: "center" }}>
+              <div style={{ width: 38, height: 38, borderRadius: 8, flex: "none", overflow: "hidden", background: f.brand_logo ? "transparent" : "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                {f.brand_logo ? <img src={f.brand_logo} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.04em" }}>{(f.brand_mark || "NC").slice(0, 3)}</span>}
+              </div>
+              <label className="btn sm" style={{ cursor: "pointer", marginBottom: 0 }}><Ic name="arrowUp" size={14} />上传<input type="file" accept="image/*" style={{ display: "none" }} onChange={onLogoFile} /></label>
+              {f.brand_logo && <button className="btn sm" type="button" onClick={() => set("brand_logo", "")}>移除</button>}
+            </div>
+          </SField>
         </SettingsGroup>
 
         <SettingsGroup title="探测默认值" icon="signal">
