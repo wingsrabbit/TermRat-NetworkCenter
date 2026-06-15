@@ -45,9 +45,9 @@ export function AdminShell({ children }) {
     }}>
       <div className="row between" style={{ height: 56, padding: collapsed ? "0" : "0 16px", justifyContent: collapsed ? "center" : "space-between", borderBottom: "1px solid var(--border)" }}>
         {collapsed
-          ? <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Ic name="rabbit" size={17} /></div>
+          ? <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "-0.04em" }}>TR</span></div>
           : <div className="row gap-8" style={{ overflow: "hidden", whiteSpace: "nowrap" }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><Ic name="rabbit" size={17} /></div>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "-0.04em" }}>TR</span></div>
               <span style={{ fontWeight: 660, fontSize: 14.5 }}>ONC <span className="faint" style={{ fontWeight: 500, fontSize: 12 }}>网络状态中心</span></span>
             </div>}
       </div>
