@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TermRat-NC — 管理 CLI（直连数据库，绕过 HTTP 鉴权；用于在 center 容器内建节点/任务）
+"""ONC — 管理 CLI（直连数据库，绕过 HTTP 鉴权；用于在 center 容器内建节点/任务）
 
   python manage.py create-node --name 香港-01 --label1 香港 --label2 CN2
   python manage.py list-nodes
@@ -14,7 +14,7 @@ import db
 
 def main():
     db.init_db()
-    p = argparse.ArgumentParser(description="TermRat-NC 管理 CLI")
+    p = argparse.ArgumentParser(description="ONC 管理 CLI")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     pn = sub.add_parser("create-node", help="创建节点（返回一次性 token）")

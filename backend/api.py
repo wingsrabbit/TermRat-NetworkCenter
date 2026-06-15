@@ -1,4 +1,4 @@
-"""TermRat-NC — REST API（Blueprint，挂在 /api 下）
+"""ONC — REST API（Blueprint，挂在 /api 下）
 
 - 公开（无鉴权）：/public/overview、/public/node/<id>(+/history)、/public/task/<id>(+/history)
 - 鉴权：/auth/login|logout|me（登录得 session token，Bearer 携带）
@@ -20,7 +20,7 @@ import webserver
 api_bp = Blueprint("api", __name__)
 
 # 版本：运行版本读 /app/VERSION；最新版本从 GitHub main 的 VERSION 拉取（带缓存）
-_VERSION_LATEST_URL = "https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/VERSION"
+_VERSION_LATEST_URL = "https://raw.githubusercontent.com/wingsrabbit/ONC/main/VERSION"
 _latest_cache = {"v": None, "ts": 0.0}
 
 
@@ -40,7 +40,7 @@ def _latest_version():
     if _latest_cache["v"] and now - _latest_cache["ts"] < 1800:  # 30 分钟缓存
         return _latest_cache["v"]
     try:
-        req = urllib.request.Request(_VERSION_LATEST_URL, headers={"User-Agent": "TermRat-NC"})
+        req = urllib.request.Request(_VERSION_LATEST_URL, headers={"User-Agent": "ONC"})
         with urllib.request.urlopen(req, timeout=5) as r:
             v = r.read().decode("utf-8").strip()
         if v:
@@ -220,6 +220,19 @@ def version_info():
     })
 
 
+# ----------------------------- 品牌（公开）-----------------------------
+@api_bp.get("/branding")
+def branding():
+    """公开品牌信息（名称 / 副标题 / 字母标 / Logo 图片），供登录 / 安装向导 / 公开页在任意登录状态下取用。"""
+    s = db.get_settings()
+    return jsonify({
+        "name": s.get("site_title") or "网络状态中心",
+        "subtitle": s.get("site_subtitle") or "",
+        "mark": s.get("brand_mark") or "NC",
+        "logo": s.get("brand_logo") or "",
+    })
+
+
 # ----------------------------- 公开 -----------------------------
 @api_bp.get("/public/overview")
 def public_overview():
@@ -235,7 +248,7 @@ def public_overview():
         for t in data["tasks"]:
             t["target_address"] = _mask_addr(t.get("target_address"), hmap)
     data["nodes"] = [_public_node(n) for n in data["nodes"]]
-    data["site"] = {k: db.get_settings().get(k) for k in ("site_title", "site_subtitle")}
+    data["site"] = {k: db.get_settings().get(k) for k in ("site_title", "site_subtitle", "brand_mark", "brand_logo")}
     return jsonify(data)
 
 

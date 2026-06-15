@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 告警通道（admin）：Webhook 渠道表 + 添加/编辑/删除
+   ONC — 告警通道（admin）：Webhook 渠道表 + 添加/编辑/删除
    ============================================================ */
 import React, { useState, useEffect } from "react";
 import { Ic, Tag, Empty, Modal, Confirm, Switch, useToast } from "../../ui.jsx";

@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 节点管理（admin）：表格 + 添加/部署/删除 + 一次性 token
+   ONC — 节点管理（admin）：表格 + 添加/部署/删除 + 一次性 token
    ============================================================ */
 import React, { useState, useEffect, useMemo } from "react";
 import { Ic, Tag, Empty, Modal, Confirm, CodeBlock, Switch, useToast } from "../../ui.jsx";

@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 管理端任务详情（TimeChart + 范围选择 + 统计卡）
+   ONC — 管理端任务详情（TimeChart + 范围选择 + 统计卡）
    接后端真数据：getTaskDetail / getTaskHistory（按范围映射 minutes）
    ============================================================ */
 import React, { useState, useEffect, useMemo } from "react";

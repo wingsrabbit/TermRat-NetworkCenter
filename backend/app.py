@@ -1,4 +1,4 @@
-"""TermRat-NC — 后端入口（Flask）
+"""ONC — 后端入口（Flask）
 单进程：① 服务构建后的前端静态资源（SPA）② REST API（见 api.py）③ 初始化 SQLite。
 """
 import os
@@ -30,7 +30,7 @@ app.register_blueprint(api_bp, url_prefix="/api")
 
 @app.get("/api/health")
 def health():
-    return jsonify({"status": "ok", "name": "TermRat-NC", "version": VERSION})
+    return jsonify({"status": "ok", "name": "ONC", "version": VERSION})
 
 
 @app.route("/", defaults={"path": ""})

@@ -1,4 +1,4 @@
-"""TermRat-NC 监控 Agent 主循环。
+"""ONC 监控 Agent 主循环。
 
 职责：
   1. 周期性从中心拉取分配给本节点的探测任务；
@@ -147,7 +147,7 @@ def _next_grid(now_epoch: float, interval: int) -> int:
 
 def main():
     _check_config()
-    print(f"TermRat-NC agent starting; server={NC_SERVER}, version={AGENT_VERSION}")
+    print(f"ONC agent starting; server={NC_SERVER}, version={AGENT_VERSION}")
 
     # —— 启动内置测试服务（HTTP/HTTPS/UDP），供节点间互探；容错、不阻塞 ——
     try:

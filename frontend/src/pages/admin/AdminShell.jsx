@@ -1,8 +1,8 @@
 /* ============================================================
-   TermRat — 管理端外壳：折叠侧栏 + 顶栏 + 底栏 + 内容槽
+   ONC — 管理端外壳：折叠侧栏 + 顶栏 + 底栏 + 内容槽
    ============================================================ */
 import React, { useState, useEffect } from "react";
-import { useApp, ThemeToggle } from "../../store.jsx";
+import { useApp, ThemeToggle, BrandMark } from "../../store.jsx";
 import { Ic, useClickOutside } from "../../ui.jsx";
 import { apiVersion } from "../../api.js";
 
@@ -45,13 +45,13 @@ function VersionBadge() {
 }
 
 export function AdminShell({ children }) {
-  const { auth, logout, route, navigate, isAdmin, clock, secondsAgo } = useApp();
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("termrat-collapse") === "1");
+  const { auth, logout, route, navigate, isAdmin, clock, secondsAgo, brand } = useApp();
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("onc-collapse") === "1");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const userRef = useClickOutside(() => setUserMenu(false));
 
-  useEffect(() => { localStorage.setItem("termrat-collapse", collapsed ? "1" : "0"); }, [collapsed]);
+  useEffect(() => { localStorage.setItem("onc-collapse", collapsed ? "1" : "0"); }, [collapsed]);
   useEffect(() => { if (!auth) navigate("/termadmin"); }, [auth]);
   if (!auth) return null;
 
@@ -67,11 +67,11 @@ export function AdminShell({ children }) {
     }}>
       <div className="row between" style={{ height: 56, padding: collapsed ? "0" : "0 16px", justifyContent: collapsed ? "center" : "space-between", borderBottom: "1px solid var(--border)" }}>
         {collapsed
-          ? <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "-0.04em" }}>TR</span></div>
+          ? <BrandMark size={30} />
           : <div className="row gap-8" style={{ overflow: "hidden", whiteSpace: "nowrap" }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none" }}><span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "-0.04em" }}>TR</span></div>
+              <BrandMark size={30} />
               <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2, overflow: "hidden" }}>
-                <span style={{ fontWeight: 660, fontSize: 14.5 }}>TermRat <span className="faint" style={{ fontWeight: 500, fontSize: 12 }}>网络状态中心</span></span>
+                <span style={{ fontWeight: 660, fontSize: 14.5 }}>{brand.name}</span>
                 <VersionBadge />
               </div>
             </div>}
@@ -165,7 +165,7 @@ export function AdminShell({ children }) {
         {/* 底栏 */}
         <footer style={{ height: 36, flex: "none", borderTop: "1px solid var(--border)", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontSize: 11.5, color: "var(--text-3)", padding: "0 16px", textAlign: "center" }}>
           <span className="row gap-6" style={{ flexWrap: "wrap", justifyContent: "center" }}>
-            <span>Powered by <b style={{ color: "var(--text-2)" }}>TermRat</b></span>
+            <span><b style={{ color: "var(--text-2)" }}>{brand.name}</b></span>
             <span className="faint">·</span>
             <span>现在时间（GMT+8）：<span className="num">{clock}</span></span>
             <span className="faint">·</span>

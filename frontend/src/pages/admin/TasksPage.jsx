@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 任务管理（admin）：表格 + 添加/编辑（含告警阈值）+ 删除
+   ONC — 任务管理（admin）：表格 + 添加/编辑（含告警阈值）+ 删除
    ============================================================ */
 import React, { useState, useEffect, useMemo } from "react";
 import { Ic, Tag, Empty, Modal, Confirm, Switch, useToast } from "../../ui.jsx";

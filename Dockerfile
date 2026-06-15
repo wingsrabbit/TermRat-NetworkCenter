@@ -1,5 +1,5 @@
 # ============================================================
-# TermRat-NC center — 单镜像多阶段
+# ONC center — 单镜像多阶段
 #   阶段1 构建前端(Vite/React) → 阶段2 Python 运行后端(gunicorn)
 #   + 内嵌 Caddy 作 web 前置(HTTP:80 / HTTPS:443，反代 gunicorn:8080)
 #   supervisord 同容器拉起 gunicorn + caddy

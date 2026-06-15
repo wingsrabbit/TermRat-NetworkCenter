@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 管理端仪表盘（KPI + 任务卡片网格，接 /api/public/overview）
+   ONC — 管理端仪表盘（KPI + 任务卡片网格，接 /api/public/overview）
    ============================================================ */
 import React, { useState, useMemo } from "react";
 import { useApp } from "../../store.jsx";

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-# TermRat-NC · Slave(agent) installer / 探针(agent) 一键安装
+# ONC · Slave(agent) installer / 探针(agent) 一键安装
 #   Auto: install Docker → pull source → build agent image → run.
 # Usage / 用法 (-s center agent URL, -t node token, from admin Nodes page):
-#   curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/install-agent.sh \
+#   curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install-agent.sh \
 #     | sudo bash -s -- -s http://MASTER_IP:8080 -t NODE_TOKEN
 #   Optional: TNC_TEST_HTTP_PORT=8799  TNC_TEST_HTTPS_PORT=8443  TNC_TEST_UDP_PORT=8799
 # ============================================================
@@ -14,9 +14,9 @@ _loc="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
 case "$_loc" in zh*|*zh_CN*|*zh*) NC_LANG=zh ;; *) NC_LANG=en ;; esac
 L() { [ "$NC_LANG" = zh ] && printf '%s' "$1" || printf '%s' "$2"; }
 
-REPO="${TNC_REPO:-https://github.com/wingsrabbit/TermRat-NetworkCenter.git}"
-DIR="${TNC_DIR:-/opt/termrat-nc/src}"
-IMAGE="termrat-nc-agent:latest"
+REPO="${TNC_REPO:-https://github.com/wingsrabbit/ONC.git}"
+DIR="${TNC_DIR:-/opt/onc/src}"
+IMAGE="nc-agent:latest"
 NAME="nc-agent"
 SERVER=""
 TOKEN=""

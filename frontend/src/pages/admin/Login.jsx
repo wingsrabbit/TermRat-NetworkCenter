@@ -1,14 +1,14 @@
 /* ============================================================
-   TermRat — 管理端登录页 (/termadmin)（WHMCS 风格居中卡片）
+   ONC — 管理端登录页 (/termadmin)（WHMCS 风格居中卡片）
    ============================================================ */
 import React, { useState, useEffect } from "react";
 import { useApp, ThemeToggle, Brand } from "../../store.jsx";
 import { Ic, Checkbox } from "../../ui.jsx";
 
-const REMEMBER_KEY = "termrat-remember-user";
+const REMEMBER_KEY = "onc-remember-user";
 
 export function Login() {
-  const { login, navigate, auth } = useApp();
+  const { login, navigate, auth, brand } = useApp();
   const [name, setName] = useState(() => {
     try { return localStorage.getItem(REMEMBER_KEY) || ""; } catch (e) { return ""; }
   });
@@ -51,7 +51,7 @@ export function Login() {
         <div style={{ textAlign: "center", marginBottom: 22 }}>
           <div style={{ display: "inline-flex", marginBottom: 14 }}><Brand compact /></div>
           <h1 className="h1" style={{ fontSize: 21 }}>管理登录</h1>
-          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>TermRat 网络状态中心 · 控制台</p>
+          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>{brand.name} · 控制台</p>
         </div>
 
         <form onSubmit={submit} className="card card-pad" style={{ padding: "26px 26px 22px" }}>

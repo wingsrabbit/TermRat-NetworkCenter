@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 前端数据接入（调用后端 REST，替代 mock）
+   ONC — 前端数据接入（调用后端 REST，替代 mock）
    - useOverview(): 拉 /api/public/overview，轮询，归一化成页面所需结构
    - getNodeHistory / getTaskHistory: 详情页历史曲线（v0.x 详情页用）
    ============================================================ */
@@ -98,7 +98,7 @@ export function getTaskHistoryRange(id, range) {
 /* ============================================================
    管理端 API 客户端（带 Bearer 会话 token；!ok 抛出 data.error）
    ============================================================ */
-const TOKEN_KEY = "termrat-token";
+const TOKEN_KEY = "onc-token";
 
 export function getToken() {
   try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
@@ -149,6 +149,9 @@ export function apiMe() { return request("GET", "/auth/me"); } // → {user}
 
 /* —— 版本（运行 + GitHub 最新）—— */
 export function apiVersion() { return request("GET", "/version"); } // → {running, latest, up_to_date}
+
+/* —— 品牌（公开：名称 / 副标题 / 字母标 / Logo）—— */
+export function apiBranding() { return request("GET", "/branding"); } // → {name, subtitle, mark, logo}
 
 /* —— 初次安装向导 —— */
 export function apiSetupStatus() { return request("GET", "/setup/status"); } // → {needs_setup}

@@ -1,5 +1,5 @@
 #!/bin/sh
-# TermRat-NC center 容器入口：先据 DB 设置生成 Caddyfile，再起 supervisord（gunicorn+caddy）。
+# ONC center 容器入口：先据 DB 设置生成 Caddyfile，再起 supervisord（gunicorn+caddy）。
 set -e
 
 mkdir -p /app/data /app/data/certs /app/data/caddy-data /etc/caddy

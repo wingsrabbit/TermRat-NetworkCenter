@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # ============================================================
-# TermRat-NC · Master(center) installer / 中心(center) 一键安装
+# ONC · Master(center) installer / 中心(center) 一键安装
 #   Auto: install Docker → pull source → build image → run container.
 # Usage / 用法:
-#   curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/install-center.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install-center.sh | sudo bash
 # Optional env / 可选环境变量:
 #   TNC_HTTP_PORT=80  TNC_HTTPS_PORT=443  TNC_AGENT_PORT=8080
 #   TNC_ADMIN_USER=...  TNC_ADMIN_PASS=...   (preset admin, skip wizard)
-#   TNC_DATA=/opt/termrat-nc/data  TNC_DIR=/opt/termrat-nc/src
-#   TNC_REPO=https://github.com/wingsrabbit/TermRat-NetworkCenter.git
+#   TNC_DATA=/opt/onc/data  TNC_DIR=/opt/onc/src
+#   TNC_REPO=https://github.com/wingsrabbit/ONC.git
 # ============================================================
 set -euo pipefail
 
@@ -17,10 +17,10 @@ _loc="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
 case "$_loc" in zh*|*zh_CN*|*zh*) NC_LANG=zh ;; *) NC_LANG=en ;; esac
 L() { [ "$NC_LANG" = zh ] && printf '%s' "$1" || printf '%s' "$2"; }
 
-REPO="${TNC_REPO:-https://github.com/wingsrabbit/TermRat-NetworkCenter.git}"
-DIR="${TNC_DIR:-/opt/termrat-nc/src}"
-DATA="${TNC_DATA:-/opt/termrat-nc/data}"
-IMAGE="termrat-nc:latest"
+REPO="${TNC_REPO:-https://github.com/wingsrabbit/ONC.git}"
+DIR="${TNC_DIR:-/opt/onc/src}"
+DATA="${TNC_DATA:-/opt/onc/data}"
+IMAGE="nc-center:latest"
 NAME="nc-center"
 HTTP_PORT="${TNC_HTTP_PORT:-80}"
 HTTPS_PORT="${TNC_HTTPS_PORT:-443}"
@@ -80,7 +80,7 @@ if [ "$NC_LANG" = zh ]; then
 cat <<EOF
 
 ============================================================
- ✅ TermRat-NC center 已启动
+ ✅ ONC center 已启动
     公开页 : http://${IP}${HP}
     ${ADMIN_LINE}
     Agent口: http://${IP}${AP}              （从机用此地址上报，独立于 web）
@@ -88,7 +88,7 @@ cat <<EOF
  下一步：
    ${NEXT1}
    2)「节点管理 → 新增节点」拿到 Token，到每台从机执行 agent 一键安装：
-      curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/install-agent.sh \\
+      curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install-agent.sh \\
         | sudo bash -s -- -s http://${IP}${AP} -t <该节点Token>
    3) HTTPS：「系统设置 → Web 访问 / HTTPS」（Let's Encrypt / 上传证书 / 自签名）。
 ============================================================
@@ -97,7 +97,7 @@ else
 cat <<EOF
 
 ============================================================
- ✅ TermRat-NC center started
+ ✅ ONC center started
     Public : http://${IP}${HP}
     ${ADMIN_LINE}
     Agent  : http://${IP}${AP}              (agents report here; independent of web)
@@ -105,7 +105,7 @@ cat <<EOF
  Next:
    ${NEXT1}
    2) Nodes → Add node → copy the Token, then on each monitored host run:
-      curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/install-agent.sh \\
+      curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install-agent.sh \\
         | sudo bash -s -- -s http://${IP}${AP} -t <NODE_TOKEN>
    3) HTTPS: System Settings → Web / HTTPS (Let's Encrypt / upload cert / self-signed).
 ============================================================

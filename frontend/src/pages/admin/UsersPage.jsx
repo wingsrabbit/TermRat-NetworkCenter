@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 用户管理（admin）：账号表 + 添加 / 重置密码 / 删除
+   ONC — 用户管理（admin）：账号表 + 添加 / 重置密码 / 删除
    ============================================================ */
 import React, { useState, useEffect } from "react";
 import { Ic, Tag, Empty, Modal, Confirm, useToast } from "../../ui.jsx";

@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 管理端页面公用小组件（页头 / 行操作按钮 / 部署片段）
+   ONC — 管理端页面公用小组件（页头 / 行操作按钮 / 部署片段）
    ============================================================ */
 import React from "react";
 import { Ic } from "../../ui.jsx";
@@ -32,6 +32,6 @@ export function RowBtn({ icon, label, tone, onClick, disabled }) {
 export function deploySnippet(token) {
   const host = (typeof window !== "undefined" && window.location.hostname) || "<中心IP或域名>";
   const server = `http://${host}:8080`;
-  return `curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/install-agent.sh \\
+  return `curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install-agent.sh \\
   | sudo bash -s -- -s ${server} -t ${token}`;
 }

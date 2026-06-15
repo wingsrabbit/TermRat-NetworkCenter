@@ -1,9 +1,9 @@
 /* ============================================================
-   TermRat — 应用状态：路由 / 主题 / 鉴权 / 角色 / 刷新计时（ESM）
+   ONC — 应用状态：路由 / 主题 / 鉴权 / 角色 / 刷新计时（ESM）
    ============================================================ */
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { Ic } from "./ui.jsx";
-import { apiLogin, apiLogout, apiMe, apiSetup, getToken, setToken } from "./api.js";
+import { apiLogin, apiLogout, apiMe, apiSetup, apiBranding, getToken, setToken } from "./api.js";
 
 const AppCtx = createContext(null);
 export function useApp() { return useContext(AppCtx); }
@@ -31,10 +31,10 @@ export function AppProvider({ children }) {
   }, []);
 
   // —— 主题 —— //
-  const [theme, setTheme] = useState(() => localStorage.getItem("termrat-theme") || "light");
+  const [theme, setTheme] = useState(() => localStorage.getItem("onc-theme") || "light");
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("termrat-theme", theme);
+    localStorage.setItem("onc-theme", theme);
   }, [theme]);
   const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
 
@@ -42,14 +42,14 @@ export function AppProvider({ children }) {
   // auth: { username, role } | null。本地缓存仅为首屏即时渲染，token 才是凭据。
   const [auth, setAuth] = useState(() => {
     try {
-      const a = JSON.parse(localStorage.getItem("termrat-auth") || "null");
+      const a = JSON.parse(localStorage.getItem("onc-auth") || "null");
       // 缓存了用户但 token 已丢失（如手动清理）→ 视为未登录
       return a && getToken() ? a : null;
     } catch (e) { return null; }
   });
   const persistAuth = (a) => {
-    if (a) localStorage.setItem("termrat-auth", JSON.stringify(a));
-    else localStorage.removeItem("termrat-auth");
+    if (a) localStorage.setItem("onc-auth", JSON.stringify(a));
+    else localStorage.removeItem("onc-auth");
   };
   const applyAuth = (user) => {
     const a = { username: user.username, role: user.role };
@@ -111,10 +111,23 @@ export function AppProvider({ children }) {
     return () => clearInterval(t);
   }, []);
 
+  // —— 品牌（名称 / 字母标 / Logo，公开取，可在系统设置自定义）—— //
+  const [brand, setBrand] = useState({ name: "网络状态中心", subtitle: "实时服务器资源监控 · 网络质量探测", mark: "NC", logo: "" });
+  useEffect(() => {
+    let alive = true;
+    apiBranding().then((b) => {
+      if (!alive || !b) return;
+      const nb = { name: b.name || "网络状态中心", subtitle: b.subtitle || "", mark: b.mark || "NC", logo: b.logo || "" };
+      setBrand(nb);
+      if (nb.name) document.title = nb.name;
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
   const ctx = {
     route, navigate, theme, toggleTheme,
     auth, login, setup, logout, isAdmin,
-    tick, secondsAgo, clock,
+    tick, secondsAgo, clock, brand,
   };
   return <AppCtx.Provider value={ctx}>{children}</AppCtx.Provider>;
 }
@@ -135,18 +148,32 @@ export function ThemeToggle() {
   );
 }
 
-/* —— 品牌标志（小方块 + TR 字母标 + 文字） —— */
-export function Brand({ compact, white }) {
+/* —— Logo 方块（自定义图片 或 字母标，读 store.brand） —— */
+export function BrandMark({ size = 30 }) {
+  const { brand } = useApp();
+  const logo = brand && brand.logo;
+  const mark = ((brand && brand.mark) || "NC").slice(0, 3);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: 8, flex: "none", overflow: "hidden",
+      background: logo ? "transparent" : "var(--primary)",
+      display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+      boxShadow: logo ? "none" : "0 2px 6px rgba(47,111,237,0.35)",
+    }}>
+      {logo
+        ? <img src={logo} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        : <span style={{ fontSize: size * 0.42, fontWeight: 800, letterSpacing: "-0.04em" }}>{mark}</span>}
+    </div>
+  );
+}
+
+/* —— 品牌标志（Logo + 名称，读 store.brand） —— */
+export function Brand({ compact }) {
+  const { brand } = useApp();
   return (
     <div className="row gap-8" style={{ alignItems: "center" }}>
-      <div style={{
-        width: 30, height: 30, borderRadius: 8, background: white ? "rgba(255,255,255,0.15)" : "var(--primary)",
-        display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flex: "none",
-        boxShadow: white ? "none" : "0 2px 6px rgba(47,111,237,0.35)",
-      }}>
-        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "-0.04em" }}>TR</span>
-      </div>
-      {!compact && <span style={{ fontWeight: 660, fontSize: 15.5, letterSpacing: "-0.01em" }}>TermRat <span style={{ color: "var(--text-3)", fontWeight: 500 }}>网络状态中心</span></span>}
+      <BrandMark size={30} />
+      {!compact && <span style={{ fontWeight: 660, fontSize: 15.5, letterSpacing: "-0.01em" }}>{(brand && brand.name) || "网络状态中心"}</span>}
     </div>
   );
 }

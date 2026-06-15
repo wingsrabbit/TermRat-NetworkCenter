@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 应用根 + 路由（公开页 + 管理端 /termadmin）
+   ONC — 应用根 + 路由（公开页 + 管理端 /termadmin）
    ============================================================ */
 import React, { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./store.jsx";

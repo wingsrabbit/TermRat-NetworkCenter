@@ -1,4 +1,4 @@
-"""TermRat-NC — Web 前置（内嵌 Caddy）TLS / HTTPS 管理。
+"""ONC — Web 前置（内嵌 Caddy）TLS / HTTPS 管理。
 
 架构：单容器内 gunicorn 监听 :8080（agent 直连上报、也是兜底访问口），
 Caddy 作为前置反代占 web 端口（默认 HTTP:80 / 开启 HTTPS 则 443），把浏览器流量
@@ -43,7 +43,7 @@ def ensure_selfsigned_cert(host=None):
     from cryptography.hazmat.primitives.asymmetric import rsa
 
     pkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    cn = host or "TermRat-NC"
+    cn = host or "ONC"
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, cn)])
     sans = [x509.DNSName("localhost"), x509.IPAddress(ipaddress.ip_address("127.0.0.1"))]
     if host:

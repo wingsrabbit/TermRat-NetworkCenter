@@ -1,9 +1,9 @@
-# TermRat-NetworkCenter (NC)
+# ONC · Open Network Center
 
-> **服务器资源 + 网络质量** 统一状态中心 —— 一个公开状态页 + 一个 WHMCS 风管理后台。
+> **服务器资源 + 网络质量** 统一状态中心 —— 一个公开状态页 + 一个管理后台；**品牌名称 / Logo 可自定义**，开箱即用。
 > 中心端 **单 Docker** 即可跑（内置 Caddy 自动 HTTPS），被监控机各跑一个轻量 agent。
 
-![version](https://img.shields.io/badge/version-v0.91-blue)
+![version](https://img.shields.io/badge/version-v0.96-blue)
 ![python](https://img.shields.io/badge/python-3.12-green)
 ![docker](https://img.shields.io/badge/docker-single--image-2496ED)
 ![license](https://img.shields.io/badge/license-MIT-orange)
@@ -25,7 +25,6 @@
 - [从源码手动构建](#从源码手动构建)
 - [目录结构](#目录结构)
 - [技术栈](#技术栈)
-- [开发规范](#开发规范)
 - [License](#license)
 
 ---
@@ -91,7 +90,7 @@
 在你的**中心服务器**（Linux）上，一行命令（自动装 Docker → 构建 → 启动）：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/install-center.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install-center.sh | sudo bash
 ```
 
 完成后会输出访问地址：
@@ -111,7 +110,7 @@ curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/m
 2. 在**被监控机**上一行命令安装（`-s` 填中心 agent 地址，`-t` 填 Token）：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/install-agent.sh \
+curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/install-agent.sh \
   | sudo bash -s -- -s http://中心IP:8080 -t 你的节点TOKEN
 ```
 
@@ -164,11 +163,11 @@ curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/m
 
 ## 数据持久化
 
-中心所有状态在容器 `/app/data`（一键脚本挂到宿主 `/opt/termrat-nc/data`）：
+中心所有状态在容器 `/app/data`（一键脚本挂到宿主 `/opt/onc/data`）：
 
 ```
 data/
-├── termrat.sqlite     # 配置 + 用户 + 节点 + 任务 + 时序 + 告警历史
+├── nc.sqlite     # 配置 + 用户 + 节点 + 任务 + 时序 + 告警历史
 ├── certs/             # 上传 / 自签的 web 证书
 └── caddy-data/        # Caddy 数据（Let's Encrypt 证书等，跨重启复用）
 ```
@@ -182,7 +181,7 @@ data/
 **更新中心（真·更新，非重装）** —— 拉取最新代码、仅重建前端并**热替换**进运行中的容器，不重建整镜像、**数据与配置保留**：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/update.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/update.sh | sudo bash
 ```
 
 > 管理后台**左上角显示当前版本**并与 GitHub 最新版对比（绿 = 最新 / 橙 = 有新版），一眼看出是否需要更新。
@@ -201,10 +200,10 @@ docker restart nc-center      # 重启中心
 **一键卸载**（中心或探针通用，只删本程序、不动机器上其它 Docker 容器、默认保留 Docker）：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/main/deploy/uninstall.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/wingsrabbit/ONC/main/deploy/uninstall.sh | sudo bash
 ```
 
-> 移除 `nc-center` / `nc-agent` 容器 + `termrat-nc*` 镜像 + 安装目录 `/opt/termrat-nc`（含数据）。
+> 移除 `nc-center` / `nc-agent` 容器 + `nc-center` / `nc-agent` 镜像 + 安装目录 `/opt/onc`（含数据）。
 > 选项：`--keep-data`（保留数据/证书）；`--purge-docker`（连 Docker 一并卸，⚠ 仅当 Docker 专为本程序所装）。例：`… | sudo bash -s -- --keep-data`。
 
 ---
@@ -214,22 +213,22 @@ curl -fsSL https://raw.githubusercontent.com/wingsrabbit/TermRat-NetworkCenter/m
 不想用一键脚本时：
 
 ```bash
-git clone https://github.com/wingsrabbit/TermRat-NetworkCenter.git
-cd TermRat-NetworkCenter
+git clone https://github.com/wingsrabbit/ONC.git
+cd ONC
 
 # 1) 中心（首次打开 /termadmin 进入安装向导设置管理员；
 #    无人值守可加 -e INITIAL_ADMIN_USER=… -e INITIAL_ADMIN_PASSWORD=… 跳过向导）
-docker build -t termrat-nc:latest .
+docker build -t nc-center:latest .
 docker run -d --name nc-center --restart unless-stopped \
   -p 80:80 -p 443:443 -p 8080:8080 \
-  -v /opt/termrat-nc/data:/app/data termrat-nc:latest
+  -v /opt/onc/data:/app/data nc-center:latest
 
 # 2) agent（在每台被监控机；用根上下文 + -f agent/Dockerfile 以拷入 VERSION）
-docker build -f agent/Dockerfile -t termrat-nc-agent:latest .
+docker build -f agent/Dockerfile -t nc-agent:latest .
 docker run -d --name nc-agent --restart unless-stopped \
   --network host --pid host --cap-add NET_RAW \
   -e NC_SERVER=http://中心IP:8080 -e NC_TOKEN=节点TOKEN \
-  termrat-nc-agent:latest
+  nc-agent:latest
 ```
 
 ---
@@ -237,7 +236,7 @@ docker run -d --name nc-agent --restart unless-stopped \
 ## 目录结构
 
 ```
-TermRat-NetworkCenter/
+ONC/
 ├── backend/                # Flask：REST API + 收 agent 上报 + 服务前端 + SQLite
 │   ├── app.py              #   入口（SPA 回落 + 缓存头）
 │   ├── api.py              #   全部 REST 端点（公开 / 鉴权 / admin / agent）
@@ -277,14 +276,6 @@ TermRat-NetworkCenter/
 | 采集 | psutil · icmplib · httpx · dnspython · cryptography |
 | 存储 | SQLite（WAL）|
 | 容器 | Docker 多阶段单镜像（node:20-slim + python:3.12-slim + caddy:2）|
-
----
-
-## 开发规范
-
-- 版本号按操作规模：**大 +0.1 / 中 +0.01 / 小 +0.001**（由 `VERSION` 维护，git tag 标记）。
-- 每个改动：**开分支 → 实现 → PR → 合并后打 tag → 写入 `CHANGELOG.md`**。
-- 缺什么装什么。
 
 ---
 

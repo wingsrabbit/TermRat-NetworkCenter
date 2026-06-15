@@ -1,4 +1,4 @@
-"""TermRat-NC — 数据层（SQLite，标准库 sqlite3，无 ORM，刻意做简）
+"""ONC — 数据层（SQLite，标准库 sqlite3，无 ORM，刻意做简）
 
 实体：
 - nodes      节点（agent 主机）：含 token 哈希 + 最新资源快照
@@ -22,7 +22,21 @@ import uuid
 from contextlib import contextmanager
 
 DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data"))
-DB_PATH = os.path.join(DATA_DIR, "termrat.sqlite")
+DB_PATH = os.path.join(DATA_DIR, "nc.sqlite")
+_LEGACY_DB = os.path.join(DATA_DIR, "termrat.sqlite")   # 旧版库名（去品牌前）
+
+
+def _migrate_db_filename():
+    """旧库 termrat.sqlite → nc.sqlite：仅当旧库存在且新库不存在时改名（含 -wal/-shm），保数据不丢。"""
+    if os.path.exists(DB_PATH) or not os.path.exists(_LEGACY_DB):
+        return
+    for suf in ("", "-wal", "-shm"):
+        old = _LEGACY_DB + suf
+        if os.path.exists(old):
+            try:
+                os.rename(old, DB_PATH + suf)
+            except OSError:
+                pass
 
 OFFLINE_AFTER_SEC = int(os.environ.get("OFFLINE_AFTER_SEC", "60"))  # 超过此秒数无心跳判离线
 RETAIN_DAYS = int(os.environ.get("RETAIN_DAYS", "3"))               # 时序保留天数
@@ -179,6 +193,7 @@ _NODE_MIGRATE_COLS = [
 
 def init_db():
     os.makedirs(DATA_DIR, exist_ok=True)
+    _migrate_db_filename()
     with get_conn() as c:
         c.execute("PRAGMA journal_mode=WAL")     # 仅在初始化时设一次（持久化于 db 文件）
         c.executescript(SCHEMA)
@@ -633,8 +648,10 @@ def list_alert_history(limit=100):
 
 
 DEFAULT_SETTINGS = {
-    "site_title": "TermRat 网络状态中心",
+    "site_title": "网络状态中心",
     "site_subtitle": "实时服务器资源监控 · 网络质量探测",
+    "brand_mark": "NC",            # Logo 字母标（无上传图片时显示）
+    "brand_logo": "",              # 自定义 Logo 图片（data URL / base64，空则用字母标）
     "data_retention_days": RETAIN_DAYS,
     "global_alert_cooldown": 300,
     "default_probe_interval": 5,
@@ -728,11 +745,12 @@ def notify_channels(events):
         return
 
     def _send():
+        brand = (get_settings().get("site_title") or "").strip() or "NC"
         for ev in events:
             if ev["type"] == "alert":
-                text = f"🔴 [TermRat 告警] {ev['task']} 触发：{ev['metric']}={ev['value']} 超阈值 {ev['threshold']}"
+                text = f"🔴 [{brand} 告警] {ev['task']} 触发：{ev['metric']}={ev['value']} 超阈值 {ev['threshold']}"
             else:
-                text = f"🟢 [TermRat 恢复] {ev['task']} 已恢复正常"
+                text = f"🟢 [{brand} 恢复] {ev['task']} 已恢复正常"
             payload = json.dumps({"msgtype": "text", "text": {"content": text}, "content": text}).encode("utf-8")
             for ch in channels:
                 try:

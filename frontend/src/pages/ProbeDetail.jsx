@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 公开版 线路详情 (/probe/:id)（接后端真数据）
+   ONC — 公开版 线路详情 (/probe/:id)（接后端真数据）
    ============================================================ */
 import React, { useState, useEffect, useMemo } from "react";
 import { useApp } from "../store.jsx";

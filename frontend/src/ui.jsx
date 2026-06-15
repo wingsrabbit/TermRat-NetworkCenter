@@ -1,5 +1,5 @@
 /* ============================================================
-   TermRat — 共享 UI 原语 + 图标（ESM）
+   ONC — 共享 UI 原语 + 图标（ESM）
    ============================================================ */
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { DB, fmtLatency } from "./data.js";
