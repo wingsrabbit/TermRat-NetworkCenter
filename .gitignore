@@ -1,11 +1,8 @@
-# 临时来源（两个源仓库 clone，取材用、合并完删，不入库）
-origin/
-
 # 本地凭据 / 部署记录（含真实密钥，永不入库）
 *.local.md
 
-# cd 设计原型压缩包（已解压到 docs/design-prototype/）
-TermRat-NC.zip
+# 取材用的源仓库 clone（若存在）
+origin/
 
 # 依赖与构建产物
 node_modules/
@@ -21,6 +18,9 @@ data/
 *.sqlite
 *.sqlite3
 *.db
+
+# 打包文件
+*.zip
 
 # 环境与系统
 .env

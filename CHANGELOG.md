@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [0.91] - 2026-06-15
+### 新增
+- **一键安装脚本**：`deploy/install-center.sh`（Master）与 `deploy/install-agent.sh`（Slave），自动装 Docker → 拉源码 → 构建 → 起容器，各一行命令即可上手；支持 `TNC_*` 环境变量定制端口/账号/互测端口。
+- **LICENSE**（MIT）。
+### 变更
+- **README 全面重写**：徽章 + 目录 + 功能表 + 架构图 + 探测协议 + Master/Slave 一行命令快速开始 + 端口/HTTPS/后台/持久化/运维/源码构建/目录结构/技术栈（参考 origin 两项目风格，面向「5 分钟上手」）。
+### 移除（仓库瘦身，只留项目本身）
+- 删除 `docs/design-prototype/`（设计原型参考前端，已被 `frontend/src/` 正式实现取代）。
+- 删除过时的 `agent/README.md`（并入主 README）。
+- `.gitignore` 清理（移除已失效条目，泛化 `*.zip`）；`origin/` 取材 clone 与 `TermRat-NC.zip` 仅本地、从未入库。
+
 ## [0.9] - 2026-06-11
 ### 新增
 - **HTTPS 支持（内嵌 Caddy）**：center 镜像内置 Caddy 作 web 前置，反代到 gunicorn:8080。管理后台「系统设置 → Web 访问 / HTTPS」可在线切换四种模式并**热重载**（配置非法自动保持原配置，不中断访问）：
