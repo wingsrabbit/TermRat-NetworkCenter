@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [0.971] - 2026-06-15
+### 修复
+- **弹窗(Modal/Drawer)被裁出视口、标题与首个字段标签不可见**——根因纠正:0.961 误判为 flexbox 溢出滚动(`min-height:0`),真因是 **transform 祖先劫持 `position:fixed` 包含块**。页面内容包在 `.fade-up`(入场动画 `animation: fadeUp ... both`),`both` 让动画结束停在含 `transform: translateY(0)` 的 `to` 帧——这个**非 `none` 的 transform** 使 `.fade-up` 成为内部 fixed 弹窗的包含块,于是 `.modal` 的 `top:50%` 居中改为相对仅 155px 高的 `.fade-up` 而非视口 → 弹窗被推到 `top:-127px`、整个 head(标题+首标签)裁出视口顶部。改用 **React Portal 把 Modal/Drawer 渲染到 `document.body`**,彻底脱离任何 transform/overflow 祖先(modal 行业标准做法),一次性修好所有弹窗。线上 nc.cloud 真实环境实测:添加任务 / 添加通道弹窗均 `parentEl=BODY`、`offsetParent=视口`、完整居中、标题可见。
+
 ## [0.97] - 2026-06-15
 ### 修复
 - **探针(agent)无法用 `update.sh` 更新**：`update.sh` 整套逻辑只为中心写死（`nc-center`、拉前端、`docker cp`、查 `/api/health`），在探针机上执行直接 `Container nc-center not found` 退出。改为**自动识别本机角色**并分别处理：
