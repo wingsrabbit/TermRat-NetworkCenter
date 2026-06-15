@@ -142,6 +142,38 @@ def auth_me():
     return jsonify({"user": g.user})
 
 
+# ----------------------------- 初次安装向导 -----------------------------
+@api_bp.get("/setup/status")
+def setup_status():
+    """是否需要初次安装（库内无任何用户时为 true）。公开，供前端决定显示安装向导 / 登录页。"""
+    return jsonify({"needs_setup": db.count_users() == 0})
+
+
+@api_bp.post("/setup")
+def setup_init():
+    """初次安装：仅在「尚无任何用户」时可用，创建首个管理员 + 可选站点信息，并直接登录。
+    已初始化后调用返回 409（防止被重复 / 恶意调用顶替管理员）。"""
+    if db.count_users() > 0:
+        return jsonify({"error": "系统已完成初始化，无法重复执行"}), 409
+    b = request.get_json(silent=True) or {}
+    username = (b.get("username") or "").strip()
+    password = b.get("password") or ""
+    if len(username) < 3:
+        return jsonify({"error": "用户名至少 3 个字符"}), 400
+    if len(password) < 8:
+        return jsonify({"error": "密码至少 8 个字符"}), 400
+    site = {}
+    if (b.get("site_title") or "").strip():
+        site["site_title"] = b["site_title"].strip()
+    if (b.get("site_subtitle") or "").strip():
+        site["site_subtitle"] = b["site_subtitle"].strip()
+    if site:
+        db.update_settings(site)
+    uid = db.create_user(username, password, role="admin", created_by="setup")
+    token = db.create_session(uid)
+    return jsonify({"token": token, "user": {"username": username, "role": "admin"}})
+
+
 # ----------------------------- 公开 -----------------------------
 @api_bp.get("/public/overview")
 def public_overview():

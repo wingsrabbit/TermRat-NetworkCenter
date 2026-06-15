@@ -197,13 +197,16 @@ def init_db():
 
 
 def _ensure_default_admin():
-    """无任何用户时创建默认管理员（用户名/密码取 env，默认 admin/admin）。"""
+    """仅当显式提供 INITIAL_ADMIN_USER + INITIAL_ADMIN_PASSWORD（无人值守部署）时播种管理员；
+    否则保持 0 用户 → 首次打开管理端进入「初次安装向导」自行设置。"""
+    u = (os.environ.get("INITIAL_ADMIN_USER") or "").strip()
+    p = os.environ.get("INITIAL_ADMIN_PASSWORD") or ""
+    if not u or not p:
+        return
     with get_conn() as c:
         n = c.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
     if n == 0:
-        create_user(os.environ.get("INITIAL_ADMIN_USER", "admin"),
-                    os.environ.get("INITIAL_ADMIN_PASSWORD", "admin"),
-                    role="admin", created_by="system")
+        create_user(u, p, role="admin", created_by="system")
 
 
 def _effective_status(row):
@@ -540,6 +543,11 @@ def list_users():
         return [{"id": r["id"], "username": r["username"], "role": r["role"],
                  "created_at": r["created_at"], "created_by": r["created_by"]}
                 for r in c.execute("SELECT * FROM users ORDER BY created_at").fetchall()]
+
+
+def count_users():
+    with get_conn() as c:
+        return c.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
 
 
 def delete_user(uid):

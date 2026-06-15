@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+## [0.92] - 2026-06-15
+### 新增
+- **初次安装向导**：全新部署（库内尚无用户）首次打开 `/admin` 自动进入安装向导，设置**管理员用户名 / 密码**（密码≥8 位、需确认）+ 站点标题 / 副标题，提交后创建管理员并直接登录进入仪表盘。
+- 后端 `GET /api/setup/status`（公开，返回 `needs_setup`）+ `POST /api/setup`（仅「无任何用户」时可用，创建首个管理员 + 可选站点信息 + 直接发会话；已初始化后返回 409，防重复 / 顶替）。
+### 变更
+- **不再默认播种 admin/admin**：`_ensure_default_admin` 仅在**显式提供** `INITIAL_ADMIN_USER`+`INITIAL_ADMIN_PASSWORD`（无人值守部署）时播种；否则保持 0 用户 → 走安装向导。
+- `install-center.sh` 默认不再预置管理员（→ 向导）；仅当传 `TNC_ADMIN_USER`+`TNC_ADMIN_PASS` 时预置。登录页移除「默认 admin/admin」提示与用户名预填。
+
 ## [0.91] - 2026-06-15
 ### 新增
 - **一键安装脚本**：`deploy/install-center.sh`（Master）与 `deploy/install-agent.sh`（Slave），自动装 Docker → 拉源码 → 构建 → 起容器，各一行命令即可上手；支持 `TNC_*` 环境变量定制端口/账号/互测端口。
