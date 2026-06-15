@@ -245,10 +245,10 @@ function TokenModal({ node, onClose }) {
         <CodeBlock>{node.token}</CodeBlock>
       </div>
       <div className="field" style={{ marginBottom: 0 }}>
-        <label>在目标服务器上使用 Docker 部署</label>
+        <label>在目标探针机上执行（一行命令）</label>
         <CodeBlock>{snippet}</CodeBlock>
       </div>
-      <div className="field hint" style={{ marginTop: 10, marginBottom: 0 }}>探针启动后将自动上报资源指标并接收探测任务。ICMP 探测需 <span className="mono">--cap-add=NET_RAW</span>。</div>
+      <div className="field hint" style={{ marginTop: 10, marginBottom: 0 }}>脚本会自动安装 Docker、拉取并构建探针、以 <span className="mono">--net=host --cap-add=NET_RAW</span> 运行；约 10s 后该节点转为在线。（如已自带镜像，也可参照 README 手动 <span className="mono">docker run</span>。）</div>
     </Modal>
   );
 }
