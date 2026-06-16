@@ -3,7 +3,7 @@
 > **服务器资源 + 网络质量** 统一状态中心 —— 一个公开状态页 + 一个管理后台；**品牌名称 / Logo 可自定义**，开箱即用。
 > 中心端 **单 Docker** 即可跑（内置 Caddy 自动 HTTPS），被监控机各跑一个轻量 agent。
 
-![version](https://img.shields.io/badge/version-v0.96-blue)
+![version](https://img.shields.io/badge/version-v1.0-blue)
 ![python](https://img.shields.io/badge/python-3.12-green)
 ![docker](https://img.shields.io/badge/docker-single--image-2496ED)
 ![license](https://img.shields.io/badge/license-MIT-orange)
