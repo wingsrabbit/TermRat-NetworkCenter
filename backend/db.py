@@ -23,20 +23,6 @@ from contextlib import contextmanager
 
 DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data"))
 DB_PATH = os.path.join(DATA_DIR, "nc.sqlite")
-_LEGACY_DB = os.path.join(DATA_DIR, "nc.sqlite")   # 旧版库名（去品牌前）
-
-
-def _migrate_db_filename():
-    """旧库 nc.sqlite → nc.sqlite：仅当旧库存在且新库不存在时改名（含 -wal/-shm），保数据不丢。"""
-    if os.path.exists(DB_PATH) or not os.path.exists(_LEGACY_DB):
-        return
-    for suf in ("", "-wal", "-shm"):
-        old = _LEGACY_DB + suf
-        if os.path.exists(old):
-            try:
-                os.rename(old, DB_PATH + suf)
-            except OSError:
-                pass
 
 OFFLINE_AFTER_SEC = int(os.environ.get("OFFLINE_AFTER_SEC", "60"))  # 超过此秒数无心跳判离线
 RETAIN_DAYS = int(os.environ.get("RETAIN_DAYS", "3"))               # 时序保留天数
@@ -193,7 +179,6 @@ _NODE_MIGRATE_COLS = [
 
 def init_db():
     os.makedirs(DATA_DIR, exist_ok=True)
-    _migrate_db_filename()
     with get_conn() as c:
         c.execute("PRAGMA journal_mode=WAL")     # 仅在初始化时设一次（持久化于 db 文件）
         c.executescript(SCHEMA)
@@ -652,6 +637,7 @@ DEFAULT_SETTINGS = {
     "site_subtitle": "实时服务器资源监控 · 网络质量探测",
     "brand_mark": "NC",            # Logo 字母标（无上传图片时显示）
     "brand_logo": "",              # 自定义 Logo 图片（data URL / base64，空则用字母标）
+    "admin_path": "admin",         # 管理后台访问路径段 /<admin_path>（安装向导可改，默认 admin）
     "data_retention_days": RETAIN_DAYS,
     "global_alert_cooldown": 300,
     "default_probe_interval": 5,

@@ -1,5 +1,5 @@
 /* ============================================================
-   ONC — 初次安装向导 (/admin，库内无用户时显示)
+   ONC — 初次安装向导（库内无用户时显示）
    设置首个管理员 + 站点信息 → 创建并直接登录
    ============================================================ */
 import React, { useState } from "react";
@@ -7,13 +7,14 @@ import { useApp, ThemeToggle, Brand } from "../../store.jsx";
 import { Ic } from "../../ui.jsx";
 
 export function Setup() {
-  const { setup, navigate, brand } = useApp();
+  const { setup, navigate, brand, refreshBrand } = useApp();
   const [name, setName] = useState("");
   const [pwd, setPwd] = useState("");
   const [pwd2, setPwd2] = useState("");
   const [show, setShow] = useState(false);
   const [title, setTitle] = useState("网络状态中心");
   const [subtitle, setSubtitle] = useState("实时服务器资源监控 · 网络质量探测");
+  const [adminPath, setAdminPath] = useState("admin");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -24,14 +25,17 @@ export function Setup() {
     if (pwd.length < 8) { setErr("密码至少 8 个字符"); return; }
     if (pwd !== pwd2) { setErr("两次输入的密码不一致"); return; }
     setLoading(true);
+    const ap = adminPath.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "") || "admin";
     try {
       await setup({
         username: name.trim(),
         password: pwd,
         site_title: title.trim(),
         site_subtitle: subtitle.trim(),
+        admin_path: ap,
       });
-      navigate("/admin/dashboard");
+      await refreshBrand();
+      navigate(`/${ap}/dashboard`);
     } catch (ex) {
       setErr(ex.message || "初始化失败，请重试");
       setLoading(false);
@@ -87,6 +91,13 @@ export function Setup() {
           <div className="field">
             <label>站点副标题</label>
             <input className="input" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="副标题" />
+          </div>
+          <div className="field">
+            <label>管理后台路径</label>
+            <input className="input mono" value={adminPath} autoComplete="off"
+              onChange={(e) => setAdminPath(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
+              placeholder="admin" />
+            <div className="faint" style={{ fontSize: 11.5, marginTop: 5 }}>后台访问地址：<span className="mono">/{adminPath || "admin"}</span>　（仅小写字母 / 数字 / - _，默认 admin）</div>
           </div>
 
           <button className="btn primary block lg" disabled={loading} type="submit" style={{ marginTop: 6 }}>

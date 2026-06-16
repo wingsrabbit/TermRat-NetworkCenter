@@ -12,7 +12,7 @@ const PROTO_COLORS = { ICMP: "blue", TCP: "green", UDP: "amber", HTTP: "blue", D
 
 /* —— 公开页通用外壳：顶栏 + 容器 + 页脚 —— */
 export function PublicShell({ children }) {
-  const { navigate, brand } = useApp();
+  const { navigate, brand, adminPath } = useApp();
   return (
     <div style={{ minHeight: "100%", background: "var(--bg)" }}>
       <header style={{ position: "sticky", top: 0, zIndex: 30, background: "color-mix(in srgb, var(--bg) 88%, transparent)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--border)" }}>
@@ -20,7 +20,7 @@ export function PublicShell({ children }) {
           <div style={{ cursor: "pointer" }} onClick={() => navigate("/")}><Brand /></div>
           <div className="row gap-8">
             <ThemeToggle />
-            <button className="btn soft sm" onClick={() => navigate("/admin")}><Ic name="logout" size={14} />管理登录</button>
+            <button className="btn soft sm" onClick={() => navigate(`/${adminPath}`)}><Ic name="logout" size={14} />管理登录</button>
           </div>
         </div>
       </header>

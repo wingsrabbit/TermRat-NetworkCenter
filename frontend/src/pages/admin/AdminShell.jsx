@@ -7,19 +7,21 @@ import { Ic, useClickOutside } from "../../ui.jsx";
 import { apiVersion } from "../../api.js";
 
 /* ---------------- 菜单定义 ---------------- */
+// sub = 管理路径段之后的子路径（不含 /<adminPath> 前缀），渲染时动态拼接
 export const MENU = [
-  { key: "dashboard", path: "/admin/dashboard", label: "仪表盘", icon: "dashboard", admin: false },
-  { key: "nodes", path: "/admin/nodes", label: "节点管理", icon: "nodes", admin: true },
-  { key: "tasks", path: "/admin/tasks", label: "任务管理", icon: "tasks", admin: true },
-  { key: "alerts", path: "/admin/alerts", label: "告警通道", icon: "alert", admin: true },
-  { key: "history", path: "/admin/alerts/history", label: "告警历史", icon: "history", admin: false },
-  { key: "users", path: "/admin/users", label: "用户管理", icon: "users", admin: true },
-  { key: "settings", path: "/admin/settings", label: "系统设置", icon: "settings", admin: true },
+  { key: "dashboard", sub: "dashboard", label: "仪表盘", icon: "dashboard", admin: false },
+  { key: "nodes", sub: "nodes", label: "节点管理", icon: "nodes", admin: true },
+  { key: "tasks", sub: "tasks", label: "任务管理", icon: "tasks", admin: true },
+  { key: "alerts", sub: "alerts", label: "告警通道", icon: "alert", admin: true },
+  { key: "history", sub: "alerts/history", label: "告警历史", icon: "history", admin: false },
+  { key: "users", sub: "users", label: "用户管理", icon: "users", admin: true },
+  { key: "settings", sub: "settings", label: "系统设置", icon: "settings", admin: true },
 ];
 
-export function activeKeyFromPath(p) {
-  if (p.startsWith("/admin/alerts/history")) return "history";
-  const m = MENU.slice().reverse().find((x) => p.startsWith(x.path));
+export function activeKeyFromPath(parts) {
+  // parts = [adminPath, sub, sub2, ...]，与具体管理路径段无关
+  if (parts[1] === "alerts" && parts[2] === "history") return "history";
+  const m = MENU.find((x) => x.key !== "history" && x.sub === parts[1]);
   return m ? m.key : "dashboard";
 }
 
@@ -45,17 +47,17 @@ function VersionBadge() {
 }
 
 export function AdminShell({ children }) {
-  const { auth, logout, route, navigate, isAdmin, clock, secondsAgo, brand } = useApp();
+  const { auth, logout, route, navigate, isAdmin, clock, secondsAgo, brand, adminPath } = useApp();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("onc-collapse") === "1");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const userRef = useClickOutside(() => setUserMenu(false));
 
   useEffect(() => { localStorage.setItem("onc-collapse", collapsed ? "1" : "0"); }, [collapsed]);
-  useEffect(() => { if (!auth) navigate("/admin"); }, [auth]);
+  useEffect(() => { if (!auth) navigate("/" + adminPath); }, [auth]);
   if (!auth) return null;
 
-  const activeKey = activeKeyFromPath(route.path);
+  const activeKey = activeKeyFromPath(route.parts);
   const visibleMenu = MENU.filter((m) => !m.admin || isAdmin);
   const w = collapsed ? "var(--sidebar-w-collapsed)" : "var(--sidebar-w)";
 
@@ -81,7 +83,7 @@ export function AdminShell({ children }) {
         {visibleMenu.map((m) => {
           const active = activeKey === m.key;
           return (
-            <button key={m.key} onClick={() => { navigate(m.path); setMobileOpen(false); }}
+            <button key={m.key} onClick={() => { navigate(`/${adminPath}/${m.sub}`); setMobileOpen(false); }}
               title={collapsed ? m.label : ""}
               style={{
                 display: "flex", alignItems: "center", gap: 11, width: "100%",

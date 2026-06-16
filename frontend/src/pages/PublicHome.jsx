@@ -9,7 +9,7 @@ import { DB, fmtTraffic, fmtUptime, fmtNum } from "../data.js";   // 纯函数 u
 import { useOverview } from "../api.js";
 
 export function PublicHome() {
-  const { navigate, secondsAgo, brand } = useApp();
+  const { navigate, secondsAgo, brand, adminPath } = useApp();
   const { data: db, error } = useOverview();
   const [q, setQ] = useState("");
   const [region, setRegion] = useState("全部");
@@ -45,7 +45,7 @@ export function PublicHome() {
           <Brand />
           <div className="row gap-8">
             <ThemeToggle />
-            <button className="btn soft sm" onClick={() => navigate("/admin")}><Ic name="logout" size={14} />管理登录</button>
+            <button className="btn soft sm" onClick={() => navigate(`/${adminPath}`)}><Ic name="logout" size={14} />管理登录</button>
           </div>
         </div>
       </header>

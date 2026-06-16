@@ -23,7 +23,7 @@ const RANGES = [
 ];
 
 export function TaskDetail({ taskId }) {
-  const { navigate, tick } = useApp();
+  const { navigate, tick, adminPath } = useApp();
   const [task, setTask] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [range, setRange] = useState("1h");
@@ -74,7 +74,7 @@ export function TaskDetail({ taskId }) {
   if (notFound) {
     return (
       <div className="col gap-16 fade-up">
-        <button className="btn sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate("/admin/dashboard")}><Ic name="chevLeft" size={15} />返回</button>
+        <button className="btn sm" style={{ alignSelf: "flex-start" }} onClick={() => navigate(`/${adminPath}/dashboard`)}><Ic name="chevLeft" size={15} />返回</button>
         <div className="card"><Empty text="任务不存在" /></div>
       </div>
     );
@@ -90,7 +90,7 @@ export function TaskDetail({ taskId }) {
       {/* 顶部返回 + 范围 */}
       <div className="row between wrap gap-12">
         <div className="row gap-12">
-          <button className="btn sm" onClick={() => navigate("/admin/dashboard")}><Ic name="chevLeft" size={15} />返回</button>
+          <button className="btn sm" onClick={() => navigate(`/${adminPath}/dashboard`)}><Ic name="chevLeft" size={15} />返回</button>
           <div>
             <div className="row gap-8">
               {proto && <Tag tone={PROTO_COLORS[proto] || "gray"} className="proto-tag">{proto}</Tag>}

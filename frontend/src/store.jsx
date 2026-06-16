@@ -69,7 +69,7 @@ export function AppProvider({ children }) {
   const logout = () => {
     apiLogout();            // best-effort 通知后端 + 清 token
     setAuth(null); persistAuth(null);
-    navigate("/admin");
+    navigate("/" + adminPath);
   };
   const isAdmin = !!(auth && auth.role === "admin");
 
@@ -113,10 +113,12 @@ export function AppProvider({ children }) {
 
   // —— 品牌（名称 / 字母标 / Logo，公开取，可在系统设置自定义）—— //
   const [brand, setBrand] = useState({ name: "网络状态中心", subtitle: "实时服务器资源监控 · 网络质量探测", mark: "NC", logo: "" });
+  const [adminPath, setAdminPath] = useState("admin"); // 管理后台路径段 /<adminPath>（公开 branding 提供，安装向导可改）
   const refreshBrand = () => apiBranding().then((b) => {
     if (!b) return;
     const nb = { name: b.name || "网络状态中心", subtitle: b.subtitle || "", mark: b.mark || "NC", logo: b.logo || "" };
     setBrand(nb);
+    setAdminPath(b.admin_path || "admin");
     if (nb.name) document.title = nb.name;
   }).catch(() => {});
   useEffect(() => { refreshBrand(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
@@ -124,7 +126,7 @@ export function AppProvider({ children }) {
   const ctx = {
     route, navigate, theme, toggleTheme,
     auth, login, setup, logout, isAdmin,
-    tick, secondsAgo, clock, brand, refreshBrand,
+    tick, secondsAgo, clock, brand, refreshBrand, adminPath,
   };
   return <AppCtx.Provider value={ctx}>{children}</AppCtx.Provider>;
 }

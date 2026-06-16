@@ -1,5 +1,5 @@
 /* ============================================================
-   ONC — 管理端登录页 (/admin)（WHMCS 风格居中卡片）
+   ONC — 管理端登录页（WHMCS 风格居中卡片）
    ============================================================ */
 import React, { useState, useEffect } from "react";
 import { useApp, ThemeToggle, Brand } from "../../store.jsx";
@@ -8,7 +8,7 @@ import { Ic, Checkbox } from "../../ui.jsx";
 const REMEMBER_KEY = "onc-remember-user";
 
 export function Login() {
-  const { login, navigate, auth, brand } = useApp();
+  const { login, navigate, auth, brand, adminPath } = useApp();
   const [name, setName] = useState(() => {
     try { return localStorage.getItem(REMEMBER_KEY) || ""; } catch (e) { return ""; }
   });
@@ -19,7 +19,7 @@ export function Login() {
   const [loading, setLoading] = useState(false);
 
   // 已登录 → 直接进仪表盘
-  useEffect(() => { if (auth) navigate("/admin/dashboard"); }, [auth]);
+  useEffect(() => { if (auth) navigate(`/${adminPath}/dashboard`); }, [auth]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -32,7 +32,7 @@ export function Login() {
         if (remember) localStorage.setItem(REMEMBER_KEY, name.trim());
         else localStorage.removeItem(REMEMBER_KEY);
       } catch (_) { /* noop */ }
-      navigate("/admin/dashboard");
+      navigate(`/${adminPath}/dashboard`);
     } catch (ex) {
       setErr(ex.message || "登录失败，请重试");
       setLoading(false);

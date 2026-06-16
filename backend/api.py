@@ -182,6 +182,20 @@ def setup_status():
     return jsonify({"needs_setup": db.count_users() == 0})
 
 
+def _norm_admin_path(v):
+    """规整管理后台路径段：仅 ASCII [a-z0-9_-]（转小写、去首尾斜杠），非法 / 保留词返回 None。"""
+    if not v:
+        return None
+    p = str(v).strip().strip("/").lower()
+    if not p or len(p) > 32:
+        return None
+    if not all((c.isascii() and (c.isalnum() or c in "-_")) for c in p):
+        return None
+    if p in {"node", "probe", "api", "public", "setup", "assets"}:
+        return None
+    return p
+
+
 @api_bp.post("/setup")
 def setup_init():
     """初次安装：仅在「尚无任何用户」时可用，创建首个管理员 + 可选站点信息，并直接登录。
@@ -200,6 +214,9 @@ def setup_init():
         site["site_title"] = b["site_title"].strip()
     if (b.get("site_subtitle") or "").strip():
         site["site_subtitle"] = b["site_subtitle"].strip()
+    ap = _norm_admin_path(b.get("admin_path"))
+    if ap:
+        site["admin_path"] = ap
     if site:
         db.update_settings(site)
     uid = db.create_user(username, password, role="admin", created_by="setup")
@@ -230,6 +247,7 @@ def branding():
         "subtitle": s.get("site_subtitle") or "",
         "mark": s.get("brand_mark") or "NC",
         "logo": s.get("brand_logo") or "",
+        "admin_path": s.get("admin_path") or "admin",
     })
 
 

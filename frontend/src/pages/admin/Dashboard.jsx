@@ -11,7 +11,7 @@ import { useOverview } from "../../api.js";
 const PROTOS = ["全部", "ICMP", "TCP", "UDP", "HTTP", "DNS"];
 
 export function Dashboard() {
-  const { navigate } = useApp();
+  const { navigate, adminPath } = useApp();
   const { data: db, error } = useOverview();
   const [q, setQ] = useState("");
   const [proto, setProto] = useState("全部");
@@ -73,7 +73,7 @@ export function Dashboard() {
           <div className="card"><Empty text={db.tasks.length ? "没有符合条件的任务" : "暂无探测任务，请在任务管理中创建"} /></div>
         ) : (
           <div className="grid cards-4">
-            {tasks.map((t, i) => <TaskCard key={t.id} task={t} protoColors={db.protoColors} delay={i * 50} onClick={() => navigate("/admin/dashboard/" + t.id)} />)}
+            {tasks.map((t, i) => <TaskCard key={t.id} task={t} protoColors={db.protoColors} delay={i * 50} onClick={() => navigate(`/${adminPath}/dashboard/` + t.id)} />)}
           </div>
         )}
       </section>
