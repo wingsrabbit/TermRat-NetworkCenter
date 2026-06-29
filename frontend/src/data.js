@@ -2,6 +2,7 @@
    ONC — 数据层（v0.1：内置 mock，后续增量接真实 API）
    导出 DB 供组件 import 使用
    ============================================================ */
+import { formatUptimeDays } from "./i18n.js";
 
 // —— 阈值配色工具 —— //
 function latencyLevel(ms) {
@@ -34,13 +35,9 @@ export function fmtTraffic(mbps) {
   if (kb >= 1) return kb.toFixed(1) + " KB/s";
   return Math.round(v * 1024 * 1024) + " B/s";
 }
-/** 在线时长：入参为天（float），自适应 天 · 小时 · 分钟 */
-export function fmtUptime(days) {
-  const d = Number(days) || 0;
-  if (d >= 1) return Math.floor(d) + " 天";
-  const h = d * 24;
-  if (h >= 1) return Math.floor(h) + " 小时";
-  return Math.max(0, Math.round(d * 1440)) + " 分钟";
+/** 在线时长：入参为天（float），自适应 天 / 小时 / 分钟 */
+export function fmtUptime(days, lang = "zh") {
+  return formatUptimeDays(days, lang);
 }
 
 // —— 生成一段带噪声的 sparkline 序列 —— //

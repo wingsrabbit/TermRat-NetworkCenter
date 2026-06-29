@@ -2,37 +2,36 @@
    ONC — 公开主页 (/)（接后端真数据）
    ============================================================ */
 import React, { useState } from "react";
-import { useApp, ThemeToggle, Brand } from "../store.jsx";
+import { useApp, ThemeToggle, Brand, LanguageSwitch } from "../store.jsx";
 import { Ic, Tag, StatusDot, Bar, Empty, Latency } from "../ui.jsx";
 import { Sparkline } from "../sparkline.jsx";
 import { DB, fmtTraffic, fmtUptime, fmtNum } from "../data.js";   // 纯函数 usageLevel + 显示格式化
 import { useOverview } from "../api.js";
 
 export function PublicHome() {
-  const { navigate, secondsAgo, brand, adminPath } = useApp();
-  const { data: db, error } = useOverview();
+  const { navigate, secondsAgo, brand, adminPath, lang, t } = useApp();
+  const { data: db, error } = useOverview(10000, lang);
   const [q, setQ] = useState("");
-  const [region, setRegion] = useState("全部");
-  const [status, setStatus] = useState("全部");
+  const [region, setRegion] = useState("all");
+  const [status, setStatus] = useState("all");
 
   // 首次加载 / 加载失败
   if (!db) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, background: "var(--bg)" }}>
         <Brand />
-        <div className="muted">{error ? `加载失败：${error}（重试中…）` : "加载中…"}</div>
+        <div className="muted">{error ? t("state.loadFailedRetry", { error }) : t("state.loading")}</div>
       </div>
     );
   }
 
-  const regions = ["全部", ...Array.from(new Set(db.nodes.map((n) => n.region).filter(Boolean)))];
+  const regions = ["all", ...Array.from(new Set(db.nodes.map((n) => n.region).filter(Boolean)))];
   const hasIssue = db.kpi.offline > 0 || db.kpi.alerts > 0;
   const issueCount = db.kpi.offline + db.tasks.filter((t) => t.alerting).length;
 
   const filtered = db.nodes.filter((n) => {
-    if (region !== "全部" && n.region !== region) return false;
-    if (status === "在线" && n.status !== "online") return false;
-    if (status === "离线" && n.status !== "offline") return false;
+    if (region !== "all" && n.region !== region) return false;
+    if (status !== "all" && n.status !== status) return false;
     if (q && !(n.name.toLowerCase().includes(q.toLowerCase()) || n.tags.join(" ").toLowerCase().includes(q.toLowerCase()))) return false;
     return true;
   });
@@ -44,8 +43,9 @@ export function PublicHome() {
         <div className="container row between" style={{ height: 60 }}>
           <Brand />
           <div className="row gap-8">
+            <LanguageSwitch />
             <ThemeToggle />
-            <button className="btn soft sm" onClick={() => navigate(`/${adminPath}`)}><Ic name="logout" size={14} />管理登录</button>
+            <button className="btn soft sm" onClick={() => navigate(`/${adminPath}`)}><Ic name="logout" size={14} />{t("header.adminLogin")}</button>
           </div>
         </div>
       </header>
@@ -62,10 +62,10 @@ export function PublicHome() {
           </div>
           <div>
             <div className="h2" style={{ color: hasIssue ? "var(--red)" : "var(--green)" }}>
-              {hasIssue ? `⚠ ${issueCount} 个节点 / 线路异常` : "✓ 所有系统运行正常"}
+              {hasIssue ? t("status.issueTitle", { count: issueCount }) : t("status.allOperational")}
             </div>
             <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-              {hasIssue ? "部分节点离线或线路指标异常，团队正在处理；其余服务正常。" : "全部节点在线，探测线路指标均在阈值内。"}
+              {hasIssue ? t("status.issueDesc") : t("status.allOperationalDesc")}
             </div>
           </div>
         </div>
@@ -74,54 +74,54 @@ export function PublicHome() {
         <section style={{ marginTop: 30 }}>
           <div className="row between wrap gap-12" style={{ marginBottom: 16 }}>
             <div>
-              <div className="eyebrow">Server Status</div>
-              <h2 className="h1" style={{ marginTop: 4 }}>节点状态</h2>
+              <div className="eyebrow">{t("home.serverEyebrow")}</div>
+              <h2 className="h1" style={{ marginTop: 4 }}>{t("home.serverTitle")}</h2>
             </div>
             <div className="row gap-8 wrap">
-              <div className="search"><Ic name="search" /><input className="input" style={{ width: 200 }} placeholder="搜索节点 / 标签" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+              <div className="search"><Ic name="search" /><input className="input" style={{ width: 200 }} placeholder={t("filters.searchNodes")} value={q} onChange={(e) => setQ(e.target.value)} /></div>
               <select className="select" style={{ width: 130 }} value={region} onChange={(e) => setRegion(e.target.value)}>
-                {regions.map((r) => <option key={r}>{r}</option>)}
+                {regions.map((r) => <option key={r} value={r}>{r === "all" ? t("filters.allRegions") : r}</option>)}
               </select>
               <div className="seg">
-                {["全部", "在线", "离线"].map((s) => <button key={s} className={status === s ? "active" : ""} onClick={() => setStatus(s)}>{s}</button>)}
+                {["all", "online", "offline"].map((s) => <button key={s} className={status === s ? "active" : ""} onClick={() => setStatus(s)}>{t("filters." + s)}</button>)}
               </div>
             </div>
           </div>
           <div className="grid nodes">
-            {filtered.map((n, i) => <NodeCard key={n.id} node={n} delay={i * 50} onClick={() => navigate("/node/" + n.id)} />)}
+            {filtered.map((n, i) => <NodeCard key={n.id} node={n} delay={i * 50} lang={lang} t={t} onClick={() => navigate("/node/" + n.id)} />)}
           </div>
-          {filtered.length === 0 && <Empty text={db.nodes.length ? "没有符合条件的节点" : "暂无节点，请在管理端添加并部署 agent"} />}
+          {filtered.length === 0 && <Empty text={db.nodes.length ? t("empty.noMatchingNodes") : t("empty.noNodes")} />}
         </section>
 
         {/* 网络质量 */}
         <section style={{ marginTop: 40 }}>
-          <div className="eyebrow">Network Quality</div>
-          <h2 className="h1" style={{ marginTop: 4, marginBottom: 16 }}>网络质量探测</h2>
+          <div className="eyebrow">{t("home.networkEyebrow")}</div>
+          <h2 className="h1" style={{ marginTop: 4, marginBottom: 16 }}>{t("home.networkTitle")}</h2>
           <div className="card fade-up">
             <div className="tbl-wrap">
               <table className="tbl">
                 <thead>
                   <tr>
-                    <th>探测线路</th><th>协议</th><th>延迟</th><th>丢包率</th><th style={{ width: 140 }}>可用率趋势</th><th>状态</th>
+                    <th>{t("table.probe")}</th><th>{t("table.protocol")}</th><th>{t("table.latency")}</th><th>{t("table.loss")}</th><th style={{ width: 140 }}>{t("table.availabilityTrend")}</th><th>{t("table.status")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {db.tasks.map((t) => (
-                    <tr key={t.id} style={{ cursor: "pointer" }} onClick={() => navigate("/probe/" + t.id)}>
+                  {db.tasks.map((task) => (
+                    <tr key={task.id} style={{ cursor: "pointer" }} onClick={() => navigate("/probe/" + task.id)}>
                       <td>
-                        <div style={{ fontWeight: 540 }}>{t.name}</div>
-                        <div className="muted mono" style={{ fontSize: 12 }}>{t.source} <Ic name="arrowRight" size={11} style={{ verticalAlign: "-1px", margin: "0 2px" }} /> {t.target}{t.port ? ":" + t.port : ""}</div>
+                        <div style={{ fontWeight: 540 }}>{task.name}</div>
+                        <div className="muted mono" style={{ fontSize: 12 }}>{task.source} <Ic name="arrowRight" size={11} style={{ verticalAlign: "-1px", margin: "0 2px" }} /> {task.target}{task.port ? ":" + task.port : ""}</div>
                       </td>
-                      <td><Tag tone={db.protoColors[t.proto]} className="proto-tag">{t.proto}</Tag></td>
-                      <td><Latency ms={t.latency} /></td>
-                      <td className="num" style={{ color: t.loss > 0 ? "var(--red)" : "var(--text-2)", fontWeight: t.loss > 0 ? 600 : 400 }}>{t.hasData ? fmtNum(t.loss) + "%" : "—"}</td>
-                      <td><Sparkline data={t.spark} tone={t.alerting ? "red" : "green"} width={120} /></td>
+                      <td><Tag tone={db.protoColors[task.proto]} className="proto-tag">{task.proto}</Tag></td>
+                      <td><Latency ms={task.latency} /></td>
+                      <td className="num" style={{ color: task.loss > 0 ? "var(--red)" : "var(--text-2)", fontWeight: task.loss > 0 ? 600 : 400 }}>{task.hasData ? fmtNum(task.loss) + "%" : "—"}</td>
+                      <td><Sparkline data={task.spark} tone={task.alerting ? "red" : "green"} width={120} /></td>
                       <td>
-                        {t.alerting
-                          ? <span className="row gap-6"><StatusDot status="offline" pulse /><span style={{ color: "var(--red)", fontWeight: 540 }}>告警中</span></span>
-                          : t.hasData
-                            ? <span className="row gap-6"><StatusDot status="online" /><span className="muted">正常</span></span>
-                            : <span className="row gap-6"><span className="dot" style={{ background: "var(--text-3)" }} /><span className="faint">等待数据</span></span>}
+                        {task.alerting
+                          ? <span className="row gap-6"><StatusDot status="offline" pulse /><span style={{ color: "var(--red)", fontWeight: 540 }}>{t("status.alerting")}</span></span>
+                          : task.hasData
+                            ? <span className="row gap-6"><StatusDot status="online" /><span className="muted">{t("status.normal")}</span></span>
+                            : <span className="row gap-6"><span className="dot" style={{ background: "var(--text-3)" }} /><span className="faint">{t("status.waitingData")}</span></span>}
                       </td>
                     </tr>
                   ))}
@@ -129,15 +129,15 @@ export function PublicHome() {
               </table>
             </div>
           </div>
-          {db.tasks.length === 0 && <Empty text="暂无探测任务，请在管理端创建" />}
+          {db.tasks.length === 0 && <Empty text={t("empty.noProbeTasks")} />}
         </section>
 
         {/* 事件 / 公告时间线（后端事件功能为后续增量，暂空态） */}
         <section style={{ marginTop: 40 }}>
-          <div className="eyebrow">Incidents</div>
-          <h2 className="h1" style={{ marginTop: 4, marginBottom: 16 }}>事件与公告</h2>
+          <div className="eyebrow">{t("home.incidentsEyebrow")}</div>
+          <h2 className="h1" style={{ marginTop: 4, marginBottom: 16 }}>{t("home.incidentsTitle")}</h2>
           <div className="card card-pad fade-up">
-            <Empty text="暂无事件与公告，系统平稳运行" />
+            <Empty text={t("empty.noIncidents")} />
           </div>
         </section>
       </div>
@@ -145,8 +145,8 @@ export function PublicHome() {
       {/* 页脚 + 最后更新 */}
       <footer style={{ borderTop: "1px solid var(--border)", background: "var(--panel-2)" }}>
         <div className="container row between wrap gap-12" style={{ padding: "20px 24px", fontSize: 12.5, color: "var(--text-3)" }}>
-          <span>© 2026 {brand.name} · 数据每 10 秒刷新</span>
-          <span className="row gap-6"><span className="dot green" style={{ width: 6, height: 6 }} />最后更新：{secondsAgo} 秒前</span>
+          <span>© 2026 {brand.name} · {t("footer.refreshEvery", { seconds: 10 })}</span>
+          <span className="row gap-6"><span className="dot green" style={{ width: 6, height: 6 }} />{t("footer.lastUpdated", { seconds: secondsAgo })}</span>
         </div>
       </footer>
     </div>
@@ -154,7 +154,7 @@ export function PublicHome() {
 }
 
 /* —— 节点卡片 —— */
-export function NodeCard({ node, delay, onClick }) {
+export function NodeCard({ node, delay, onClick, lang, t }) {
   const n = node;
   const online = n.status === "online";
   const lastCpu = n.spark && n.spark.length ? n.spark[n.spark.length - 1] : 0;
@@ -168,7 +168,7 @@ export function NodeCard({ node, delay, onClick }) {
             <div className="faint" style={{ fontSize: 11.5 }}>{n.ip && n.ip !== "-" ? n.ip + " · " : ""}v{n.version}</div>
           </div>
         </div>
-        <Tag tone={online ? "green" : "red"}>{online ? "在线" : "离线"}</Tag>
+        <Tag tone={online ? "green" : "red"}>{online ? t("status.online") : t("status.offline")}</Tag>
       </div>
 
       <div className="row gap-6 wrap" style={{ marginBottom: 14 }}>
@@ -179,26 +179,26 @@ export function NodeCard({ node, delay, onClick }) {
         <React.Fragment>
           <div className="col gap-8">
             <Bar label="CPU" value={n.cpu} />
-            <Bar label="内存" value={n.mem} />
-            <Bar label="磁盘" value={n.disk} />
+            <Bar label={t("chart.memory")} value={n.mem} />
+            <Bar label={t("chart.disk")} value={n.disk} />
           </div>
           <div className="divider" style={{ margin: "14px 0" }} />
           <div className="row between" style={{ fontSize: 12.5 }}>
-            <span className="row gap-4 muted" title="下行"><Ic name="arrowDown" size={13} style={{ color: "var(--green)" }} /><span className="num">{fmtTraffic(n.netIn)}</span></span>
-            <span className="row gap-4 muted" title="上行"><Ic name="arrowUp" size={13} style={{ color: "var(--primary)" }} /><span className="num">{fmtTraffic(n.netOut)}</span></span>
-            <span className="row gap-4 muted" title="在线时长"><Ic name="clock" size={13} /><span className="num">{fmtUptime(n.uptimeDays)}</span></span>
+            <span className="row gap-4 muted" title={t("node.downlink")}><Ic name="arrowDown" size={13} style={{ color: "var(--green)" }} /><span className="num">{fmtTraffic(n.netIn)}</span></span>
+            <span className="row gap-4 muted" title={t("node.uplink")}><Ic name="arrowUp" size={13} style={{ color: "var(--primary)" }} /><span className="num">{fmtTraffic(n.netOut)}</span></span>
+            <span className="row gap-4 muted" title={t("node.uptime")}><Ic name="clock" size={13} /><span className="num">{fmtUptime(n.uptimeDays, lang)}</span></span>
           </div>
           <div className="row between" style={{ marginTop: 12, alignItems: "flex-end" }}>
-            <span className="faint" style={{ fontSize: 11.5 }}>CPU 趋势</span>
+            <span className="faint" style={{ fontSize: 11.5 }}>{t("node.cpuTrend")}</span>
             <Sparkline data={n.spark} tone={DB.usageLevel(lastCpu)} width={130} height={28} />
           </div>
         </React.Fragment>
       ) : (
         <div style={{ padding: "18px 0 8px", textAlign: "center" }}>
           <div className="row center gap-6" style={{ color: "var(--red)", fontWeight: 540, fontSize: 13 }}>
-            <Ic name="warnTri" size={15} />节点离线
+            <Ic name="warnTri" size={15} />{t("node.offline")}
           </div>
-          <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>最后在线 {n.lastSeen}</div>
+          <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{t("node.lastOnline", { time: n.lastSeen })}</div>
         </div>
       )}
     </div>

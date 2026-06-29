@@ -1,9 +1,10 @@
 /* ============================================================
    ONC — 应用状态：路由 / 主题 / 鉴权 / 角色 / 刷新计时（ESM）
    ============================================================ */
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, useMemo, useCallback, createContext, useContext } from "react";
 import { Ic } from "./ui.jsx";
 import { apiLogin, apiLogout, apiMe, apiSetup, apiBranding, getToken, setToken } from "./api.js";
+import { localizeBrand, normalizeLang, persistLang, resolveInitialLang, translate, writeLangToUrl } from "./i18n.js";
 
 const AppCtx = createContext(null);
 export function useApp() { return useContext(AppCtx); }
@@ -37,6 +38,17 @@ export function AppProvider({ children }) {
     localStorage.setItem("onc-theme", theme);
   }, [theme]);
   const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
+
+  // —— 语言（URL lang > localStorage > navigator.language > zh） —— //
+  const [lang, setLangState] = useState(() => resolveInitialLang());
+  useEffect(() => { persistLang(lang); }, [lang]);
+  const setLang = useCallback((next) => {
+    const normalized = normalizeLang(next) || "zh";
+    setLangState(normalized);
+    persistLang(normalized);
+    writeLangToUrl(normalized);
+  }, []);
+  const t = useCallback((key, vars) => translate(lang, key, vars), [lang]);
 
   // —— 鉴权 + 角色（真实后端会话 token）—— //
   // auth: { username, role } | null。本地缓存仅为首屏即时渲染，token 才是凭据。
@@ -112,19 +124,23 @@ export function AppProvider({ children }) {
   }, []);
 
   // —— 品牌（名称 / 字母标 / Logo，公开取，可在系统设置自定义）—— //
-  const [brand, setBrand] = useState({ name: "网络状态中心", subtitle: "实时服务器资源监控 · 网络质量探测", mark: "NC", logo: "" });
+  const [rawBrand, setRawBrand] = useState({ name: "", subtitle: "", mark: "NC", logo: "" });
+  const brand = useMemo(() => localizeBrand(rawBrand, lang), [rawBrand, lang]);
   const [adminPath, setAdminPath] = useState("admin"); // 管理后台路径段 /<adminPath>（公开 branding 提供，安装向导可改）
   const refreshBrand = () => apiBranding().then((b) => {
     if (!b) return;
-    const nb = { name: b.name || "网络状态中心", subtitle: b.subtitle || "", mark: b.mark || "NC", logo: b.logo || "" };
-    setBrand(nb);
+    const nb = { name: b.name || "", subtitle: b.subtitle || "", mark: b.mark || "NC", logo: b.logo || "" };
+    setRawBrand(nb);
     setAdminPath(b.admin_path || "admin");
-    if (nb.name) document.title = nb.name;
   }).catch(() => {});
   useEffect(() => { refreshBrand(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    if (brand.name) document.title = brand.name;
+  }, [brand.name]);
 
   const ctx = {
     route, navigate, theme, toggleTheme,
+    lang, setLang, t,
     auth, login, setup, logout, isAdmin,
     tick, secondsAgo, clock, brand, refreshBrand, adminPath,
   };
@@ -139,11 +155,22 @@ function fmtClock() {
 
 /* —— 主题切换按钮（公用） —— */
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useApp();
+  const { theme, toggleTheme, t } = useApp();
   return (
-    <button className="btn-icon" onClick={toggleTheme} aria-label="切换主题" title={theme === "light" ? "切换深色" : "切换浅色"}>
+    <button className="btn-icon" onClick={toggleTheme} aria-label={t("theme.toggle")} title={theme === "light" ? t("theme.toDark") : t("theme.toLight")}>
       <Ic name={theme === "light" ? "moon" : "sun"} />
     </button>
+  );
+}
+
+/* —— 公开页语言切换 —— */
+export function LanguageSwitch() {
+  const { lang, setLang, t } = useApp();
+  return (
+    <div className="seg lang-switch" role="group" aria-label={t("lang.switch")}>
+      <button type="button" className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>{t("lang.english")}</button>
+      <button type="button" className={lang === "zh" ? "active" : ""} onClick={() => setLang("zh")}>{t("lang.chinese")}</button>
+    </div>
   );
 }
 
@@ -172,7 +199,7 @@ export function Brand({ compact }) {
   return (
     <div className="row gap-8" style={{ alignItems: "center" }}>
       <BrandMark size={30} />
-      {!compact && <span style={{ fontWeight: 660, fontSize: 15.5, letterSpacing: "-0.01em" }}>{(brand && brand.name) || "网络状态中心"}</span>}
+      {!compact && <span className="brand-name" style={{ fontWeight: 660, fontSize: 15.5, letterSpacing: 0 }}>{(brand && brand.name) || "网络状态中心"}</span>}
     </div>
   );
 }

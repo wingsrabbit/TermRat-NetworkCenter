@@ -5,6 +5,7 @@
    ============================================================ */
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
+import { translate } from "./i18n.js";
 
 /* —— 读取当前主题下的图表用色 —— */
 export function chartColors() {
@@ -158,8 +159,9 @@ export function TimeChart({ data, range }) {
 }
 
 /* —— 公开版：固定 30 分钟 延迟曲线（绿面积 + 可选丢包红 / 抖动琥珀虚线，无 dataZoom） —— */
-export function ProbeMiniChart({ data, height }) {
+export function ProbeMiniChart({ data, height, lang = "zh" }) {
   const hasLoss = data.some((d) => d.loss > 0);
+  const tr = (key) => translate(lang, key);
   const build = (c, reduce) => ({
     animation: !reduce, animationDuration: 650, animationEasing: "cubicOut",
     grid: { left: 48, right: hasLoss ? 46 : 18, top: 30, bottom: 28 },
@@ -171,20 +173,21 @@ export function ProbeMiniChart({ data, height }) {
       { type: "value", name: "%", position: "right", min: 0, max: 20, show: hasLoss, nameTextStyle: { color: c.text2, fontSize: 11 }, axisLabel: { color: c.text2, fontSize: 11 }, splitLine: { show: false }, axisLine: { show: false }, axisTick: { show: false } },
     ],
     series: [
-      hasLoss && { name: "丢包 (%)", type: "bar", yAxisIndex: 1, data: data.map((d) => [d.ts, d.loss]), itemStyle: { color: c.red, borderRadius: [2, 2, 0, 0] }, barMaxWidth: 5, z: 1 },
-      { name: "抖动 (ms)", type: "line", yAxisIndex: 0, data: data.map((d) => [d.ts, d.jitter]), smooth: true, showSymbol: false, lineStyle: { color: c.amber, width: 1.2, type: "dashed" }, z: 2 },
+      hasLoss && { name: tr("chart.lossPct"), type: "bar", yAxisIndex: 1, data: data.map((d) => [d.ts, d.loss]), itemStyle: { color: c.red, borderRadius: [2, 2, 0, 0] }, barMaxWidth: 5, z: 1 },
+      { name: tr("chart.jitterMs"), type: "line", yAxisIndex: 0, data: data.map((d) => [d.ts, d.jitter]), smooth: true, showSymbol: false, lineStyle: { color: c.amber, width: 1.2, type: "dashed" }, z: 2 },
       {
-        name: "延迟 (ms)", type: "line", yAxisIndex: 0, data: data.map((d) => [d.ts, d.latency]), smooth: true, showSymbol: false,
+        name: tr("chart.latencyMs"), type: "line", yAxisIndex: 0, data: data.map((d) => [d.ts, d.latency]), smooth: true, showSymbol: false,
         lineStyle: { color: hasLoss ? c.red : c.green, width: 2 }, z: 3,
         areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: hasLoss ? "rgba(208,48,80,0.26)" : "rgba(24,160,88,0.26)" }, { offset: 1, color: "rgba(0,0,0,0.01)" }]) },
       },
     ].filter(Boolean),
   });
-  return <EChart build={build} deps={[data]} height={height || 300} />;
+  return <EChart build={build} deps={[data, lang]} height={height || 300} />;
 }
 
 /* —— 公开版：节点资源使用率曲线（CPU/内存/磁盘 %，固定 30 分钟） —— */
-export function ResourceChart({ data, height }) {
+export function ResourceChart({ data, height, lang = "zh" }) {
+  const tr = (key) => translate(lang, key);
   const build = (c, reduce) => ({
     animation: !reduce, animationDuration: 650, animationEasing: "cubicOut",
     color: [c.primary, c.green, c.amber],
@@ -195,15 +198,16 @@ export function ResourceChart({ data, height }) {
     yAxis: { type: "value", name: "%", min: 0, max: 100, nameTextStyle: { color: c.text2, fontSize: 11 }, axisLabel: { color: c.text2, fontSize: 11 }, splitLine: { lineStyle: { color: c.border, type: "dashed" } }, axisLine: { show: false }, axisTick: { show: false } },
     series: [
       { name: "CPU", type: "line", data: data.map((d) => [d.ts, d.cpu]), smooth: true, showSymbol: false, lineStyle: { width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: "rgba(47,111,237,0.20)" }, { offset: 1, color: "rgba(47,111,237,0.01)" }]) } },
-      { name: "内存", type: "line", data: data.map((d) => [d.ts, d.mem]), smooth: true, showSymbol: false, lineStyle: { width: 2 } },
-      { name: "磁盘", type: "line", data: data.map((d) => [d.ts, d.disk]), smooth: true, showSymbol: false, lineStyle: { width: 2 } },
+      { name: tr("chart.memory"), type: "line", data: data.map((d) => [d.ts, d.mem]), smooth: true, showSymbol: false, lineStyle: { width: 2 } },
+      { name: tr("chart.disk"), type: "line", data: data.map((d) => [d.ts, d.disk]), smooth: true, showSymbol: false, lineStyle: { width: 2 } },
     ],
   });
-  return <EChart build={build} deps={[data]} height={height || 260} />;
+  return <EChart build={build} deps={[data, lang]} height={height || 260} />;
 }
 
 /* —— 公开版：节点流量曲线（↓in 绿 / ↑out 蓝，固定 30 分钟） —— */
-export function TrafficChart({ data, height }) {
+export function TrafficChart({ data, height, lang = "zh" }) {
+  const tr = (key) => translate(lang, key);
   // 按峰值自适应单位：MB/s · KB/s · B/s（避免空闲机的 KB 级流量显示成 0）
   const peak = Math.max(0, ...data.map((d) => Math.max(d.netIn || 0, d.netOut || 0)));
   let unit = "MB/s", scale = 1;
@@ -219,9 +223,9 @@ export function TrafficChart({ data, height }) {
     xAxis: { type: "time", axisLine: { lineStyle: { color: c.border } }, axisLabel: { color: c.text2, fontSize: 11, hideOverlap: true }, axisTick: { show: false }, splitLine: { show: false } },
     yAxis: { type: "value", name: unit, nameTextStyle: { color: c.text2, fontSize: 11 }, axisLabel: { color: c.text2, fontSize: 11 }, splitLine: { lineStyle: { color: c.border, type: "dashed" } }, axisLine: { show: false }, axisTick: { show: false } },
     series: [
-      { name: "↓ 下行", type: "line", data: data.map((d) => [d.ts, sv(d.netIn)]), smooth: true, showSymbol: false, lineStyle: { width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: "rgba(24,160,88,0.22)" }, { offset: 1, color: "rgba(24,160,88,0.01)" }]) } },
-      { name: "↑ 上行", type: "line", data: data.map((d) => [d.ts, sv(d.netOut)]), smooth: true, showSymbol: false, lineStyle: { width: 2 } },
+      { name: tr("chart.download"), type: "line", data: data.map((d) => [d.ts, sv(d.netIn)]), smooth: true, showSymbol: false, lineStyle: { width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: "rgba(24,160,88,0.22)" }, { offset: 1, color: "rgba(24,160,88,0.01)" }]) } },
+      { name: tr("chart.upload"), type: "line", data: data.map((d) => [d.ts, sv(d.netOut)]), smooth: true, showSymbol: false, lineStyle: { width: 2 } },
     ],
   });
-  return <EChart build={build} deps={[data]} height={height || 220} />;
+  return <EChart build={build} deps={[data, lang]} height={height || 220} />;
 }

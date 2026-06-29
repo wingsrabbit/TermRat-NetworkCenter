@@ -12,7 +12,7 @@ import { getTaskDetail, getTaskHistory } from "../api.js";
 const PROTO_COLORS = { ICMP: "blue", TCP: "green", UDP: "amber", HTTP: "blue", DNS: "green" };
 
 export function ProbeDetail({ id }) {
-  const { navigate, tick } = useApp();
+  const { navigate, tick, lang, t } = useApp();
   const [task, setTask] = useState(null);
   const [hist, setHist] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -66,55 +66,55 @@ export function ProbeDetail({ id }) {
   }, [hist]);
 
   if (!loaded) {
-    return <PublicShell><div className="card card-pad"><div className="muted">加载中…</div></div></PublicShell>;
+    return <PublicShell><div className="card card-pad"><div className="muted">{t("state.loading")}</div></div></PublicShell>;
   }
   if (!task) {
-    return <PublicShell><div className="card"><Empty text={error ? `线路加载失败：${error}` : "线路不存在"} /></div></PublicShell>;
+    return <PublicShell><div className="card"><Empty text={error ? t("probe.loadFailed", { error }) : t("probe.notFound")} /></div></PublicShell>;
   }
 
   const proto = (task.protocol || "").toUpperCase();
-  const source = task.source_node_id || "源节点";
+  const source = task.source_node_id || t("probe.sourceNode");
   const target = task.target_address || task.target_node_id || "-";
   const alerting = task.alert_status === "alerting";
 
   return (
     <PublicShell>
-      <button className="btn sm" style={{ marginBottom: 16 }} onClick={() => navigate("/")}><Ic name="chevLeft" size={15} />返回主页</button>
+      <button className="btn sm" style={{ marginBottom: 16 }} onClick={() => navigate("/")}><Ic name="chevLeft" size={15} />{t("node.backHome")}</button>
 
       <div className="card card-pad fade-up" style={{ marginBottom: 18 }}>
         <div className="row between wrap gap-12">
           <div className="row gap-10" style={{ alignItems: "center" }}>
             <Tag tone={PROTO_COLORS[proto] || "gray"} className="proto-tag">{proto}</Tag>
             <h1 className="h1" style={{ fontSize: 20 }}>{task.name}</h1>
-            {alerting ? <Tag tone="red" dot>告警中</Tag> : <Tag tone="green" dot>正常</Tag>}
+            {alerting ? <Tag tone="red" dot>{t("status.alerting")}</Tag> : <Tag tone="green" dot>{t("status.normal")}</Tag>}
           </div>
         </div>
         <div className="muted mono" style={{ fontSize: 13, marginTop: 12, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ whiteSpace: "nowrap" }}>{source}</span>
           <Ic name="arrowRight" size={13} />
           <span style={{ whiteSpace: "nowrap" }}>{target}{task.target_port ? ":" + task.target_port : ""}</span>
-          {task.interval ? <span className="faint" style={{ whiteSpace: "nowrap" }}>· 探测间隔 {task.interval}s</span> : null}
+          {task.interval ? <span className="faint" style={{ whiteSpace: "nowrap" }}>· {t("probe.interval", { seconds: task.interval })}</span> : null}
         </div>
       </div>
 
       {/* 统计小卡 */}
       <div className="grid mini fade-up" style={{ marginBottom: 18 }}>
-        <MiniStat label="当前延迟" value={stats.cur != null ? fmtLatency(stats.cur) : "—"} suffix={stats.cur != null ? "ms" : ""} icon="activity" level={stats.cur != null ? DB.latencyLevel(stats.cur) : null} />
-        <MiniStat label="平均延迟" value={stats.avg != null ? fmtLatency(stats.avg) : "—"} suffix={stats.avg != null ? "ms" : ""} icon="signal" level={stats.avg != null ? DB.latencyLevel(stats.avg) : null} />
-        <MiniStat label="丢包率" value={stats.loss != null ? fmtNum(stats.loss) : "—"} suffix={stats.loss != null ? "%" : ""} icon="warnTri" tone={stats.loss > 0 ? "var(--red)" : "var(--green)"} />
-        <MiniStat label="可用率" value={stats.avail != null ? fmtNum(stats.avail) : "—"} suffix={stats.avail != null ? "%" : ""} icon="checkCircle" tone={stats.avail != null && stats.avail < 99 ? "var(--amber)" : "var(--green)"} />
+        <MiniStat label={t("probe.currentLatency")} value={stats.cur != null ? fmtLatency(stats.cur) : "—"} suffix={stats.cur != null ? "ms" : ""} icon="activity" level={stats.cur != null ? DB.latencyLevel(stats.cur) : null} />
+        <MiniStat label={t("probe.avgLatency")} value={stats.avg != null ? fmtLatency(stats.avg) : "—"} suffix={stats.avg != null ? "ms" : ""} icon="signal" level={stats.avg != null ? DB.latencyLevel(stats.avg) : null} />
+        <MiniStat label={t("probe.packetLoss")} value={stats.loss != null ? fmtNum(stats.loss) : "—"} suffix={stats.loss != null ? "%" : ""} icon="warnTri" tone={stats.loss > 0 ? "var(--red)" : "var(--green)"} />
+        <MiniStat label={t("probe.availability")} value={stats.avail != null ? fmtNum(stats.avail) : "—"} suffix={stats.avail != null ? "%" : ""} icon="checkCircle" tone={stats.avail != null && stats.avail < 99 ? "var(--amber)" : "var(--green)"} />
       </div>
 
       {/* 历史曲线 */}
       <div className="card card-pad fade-up">
         <div className="card-head">
           <div>
-            <h3 className="h3">延迟 / 丢包 / 抖动 · 近 30 分钟</h3>
-            <span className="faint" style={{ fontSize: 12 }}>{alerting ? "红线=延迟(告警) · 红柱=丢包 · 琥珀虚线=抖动" : "绿线=延迟 · 琥珀虚线=抖动"}</span>
+            <h3 className="h3">{t("probe.historyTitle")}</h3>
+            <span className="faint" style={{ fontSize: 12 }}>{alerting ? t("probe.historyLegendAlert") : t("probe.historyLegendNormal")}</span>
           </div>
         </div>
-        {chartData.length ? <ProbeMiniChart data={chartData} /> : <Empty text="暂无探测历史数据" />}
-        <div className="faint" style={{ fontSize: 12, marginTop: 10 }}>· 对客简版，固定展示近 30 分钟数据，数据每 10 秒自动刷新。</div>
+        {chartData.length ? <ProbeMiniChart data={chartData} lang={lang} /> : <Empty text={t("probe.historyEmpty")} />}
+        <div className="faint" style={{ fontSize: 12, marginTop: 10 }}>{t("probe.publicNote")}</div>
       </div>
     </PublicShell>
   );

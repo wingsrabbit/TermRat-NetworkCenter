@@ -21,12 +21,12 @@ import { UsersPage } from "./pages/admin/UsersPage.jsx";
 import { SettingsPage } from "./pages/admin/SettingsPage.jsx";
 
 function NotFound() {
-  const { navigate } = useApp();
+  const { navigate, t } = useApp();
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 14, background: "var(--panel)" }}>
       <div className="num" style={{ fontSize: 56, fontWeight: 700, color: "var(--text-3)" }}>404</div>
-      <p className="muted">页面不存在</p>
-      <button className="btn primary" onClick={() => navigate("/")}>返回主页</button>
+      <p className="muted">{t("notFound.message")}</p>
+      <button className="btn primary" onClick={() => navigate("/")}>{t("node.backHome")}</button>
     </div>
   );
 }

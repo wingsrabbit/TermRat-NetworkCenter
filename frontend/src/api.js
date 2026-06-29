@@ -4,20 +4,16 @@
    - getNodeHistory / getTaskHistory: 详情页历史曲线（v0.x 详情页用）
    ============================================================ */
 import { useState, useEffect } from "react";
+import { formatRelativeTime } from "./i18n.js";
 
 const PROTO_COLORS = { ICMP: "blue", TCP: "green", UDP: "amber", HTTP: "blue", DNS: "green" };
 
-function relTime(ms) {
-  if (!ms) return "—";
-  const s = Math.floor((Date.now() - ms) / 1000);
-  if (s < 60) return `${s} 秒前`;
-  if (s < 3600) return `${Math.floor(s / 60)} 分钟前`;
-  if (s < 86400) return `${Math.floor(s / 3600)} 小时前`;
-  return `${Math.floor(s / 86400)} 天前`;
+function relTime(ms, lang) {
+  return formatRelativeTime(ms, lang);
 }
 
 /** 把后端 overview 原始结构归一化成页面组件期望的字段名 */
-function normalize(raw) {
+function normalize(raw, lang = "zh") {
   const nodes = (raw.nodes || []).map((n) => ({
     id: n.id, name: n.name, region: n.region || "", tags: n.tags || [], status: n.status,
     cpu: Math.round(n.cpu ?? 0), mem: Math.round(n.mem ?? 0), disk: Math.round(n.disk ?? 0),
@@ -26,7 +22,7 @@ function normalize(raw) {
     uptimeDays: n.uptime_days ?? 0,
     ip: n.public_ip || "-", version: n.agent_version || "?",
     spark: (n.spark || []).map((v) => Math.round(v)),
-    lastSeen: relTime(n.last_seen),
+    lastSeen: relTime(n.last_seen, lang),
   }));
   const nameById = Object.fromEntries(nodes.map((n) => [n.id, n.name]));
   const tasks = (raw.tasks || []).map((t) => {
@@ -56,7 +52,7 @@ function normalize(raw) {
 }
 
 /** 拉总览 + 定时轮询。返回 { data, error }，data 为 null 表示加载中。 */
-export function useOverview(intervalMs = 10000) {
+export function useOverview(intervalMs = 10000, lang = "zh") {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   useEffect(() => {
@@ -66,7 +62,7 @@ export function useOverview(intervalMs = 10000) {
         const r = await fetch("/api/public/overview");
         if (!r.ok) throw new Error("HTTP " + r.status);
         const raw = await r.json();
-        if (alive) { setData(normalize(raw)); setError(null); }
+        if (alive) { setData(normalize(raw, lang)); setError(null); }
       } catch (e) {
         if (alive) setError(e.message || String(e));
       }
@@ -74,7 +70,7 @@ export function useOverview(intervalMs = 10000) {
     load();
     const t = setInterval(load, intervalMs);
     return () => { alive = false; clearInterval(t); };
-  }, [intervalMs]);
+  }, [intervalMs, lang]);
   return { data, error };
 }
 
